@@ -16,8 +16,8 @@ func Categories(home string, projectRoots []string) []Category {
 		return out
 	}
 	lib := "~/Library/"
-	return []Category{
-		{"projects", projectRoots},
+	cats := []Category{
+		{"projects", nil},
 		{"xcode", h(lib + "Developer")},
 		{"android", h(lib+"Android", "~/.android")},
 		{"pkg-caches", h("~/.npm", lib+"pnpm", "~/.gradle", "~/.pub-cache", "~/go/pkg", "~/.cargo", "~/.m2",
@@ -42,4 +42,17 @@ func Categories(home string, projectRoots []string) []Category {
 		{"trash", h("~/.Trash")},
 		{"media", h("~/Documents", "~/Pictures", "~/Movies", "~/Music")},
 	}
+	// a project root that is also another category's folder (~/Downloads) stays in that category
+	taken := map[string]bool{}
+	for _, c := range cats {
+		for _, p := range c.Paths {
+			taken[p] = true
+		}
+	}
+	for _, r := range projectRoots {
+		if !taken[r] {
+			cats[0].Paths = append(cats[0].Paths, r)
+		}
+	}
+	return cats
 }

@@ -23,12 +23,12 @@ Run `swelo permissions` to see every permission swelo may use and why.
 
 | Command | | Status |
 |---|---|---|
-| `swelo` | What swelo does, permission status, command list | ✅ |
+| `swelo` | Opens a menu on a terminal: pick a command with ↑↓ and Enter, tick what to delete or uninstall, confirm by choosing — no flags to type. Prints the overview when not on a terminal | ✅ |
 | `swelo permissions` | Every permission (Full Disk Access, sudo) explained | ✅ |
-| `swelo clean` | Clean regenerable files; dry run unless `--apply` | ✅ |
+| `swelo clean` | Clean regenerable files; dry run unless `--apply`, `--pick` to tick rules | ✅ |
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
 | `swelo uninstall` | Lists apps (with their ~/Library leftovers) and developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <id>` uninstalls with each tool's own command after showing it | ✅ |
-| `swelo optimize` | Time Machine exclusions for regenerable folders, `git gc` on large repos, `brew autoremove` (dry run unless `--apply`) | ✅ |
+| `swelo optimize` | Time Machine exclusions for regenerable folders, `git gc` on large repos, `brew autoremove` (dry run unless `--apply`, `--pick` to tick tasks) | ✅ |
 | `swelo status` / `swelo history` | Disk status, free-space trend, recent cleanups / full log of everything swelo removed | ✅ |
 
 Output language follows your system (Turkish or English); override with `--lang tr|en`.
@@ -46,7 +46,7 @@ Prebuilt binaries are on the [releases page](https://github.com/musacanminaz/swe
 ## Quick start
 
 ```sh
-swelo                      # what swelo does, permission status
+swelo                      # menu: choose, tick, confirm
 swelo clean                # dry run: lists what can be freed, deletes nothing
 swelo clean --apply        # deletes the 🟢 items after you confirm
 swelo clean --apply --risky --only docker,tools
@@ -70,7 +70,9 @@ Every deletion is logged to `~/.local/state/swelo/history.jsonl`.
 `~/.config/swelo/config.yaml`:
 
 ```yaml
-roots: [~/Desktop, ~/code]        # where projects live (default: common folders)
+roots: [~/Desktop, ~/code]        # where projects live (default: ~/* — every folder in home
+                                  # except Library, Applications, Public, hidden, protected
+                                  # and cloud-synced folders like OneDrive or Dropbox)
 exclude: ["*/my-release/*"]       # never touched
 recent_days: 7                    # skip projects changed this recently
 disable: [browser-cache, docker]  # rule ids or groups

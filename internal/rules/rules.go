@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -65,8 +67,41 @@ type Config struct {
 	Top        int      `yaml:"top"`         // items listed per rule (default 10)
 }
 
-// DefaultRoots are scanned for projects when the config names none.
-var DefaultRoots = []string{"~/Desktop", "~/Projects", "~/projects", "~/Developer", "~/code", "~/dev", "~/src", "~/work", "~/repos", "~/git", "~/GitHub"}
+// DefaultRoots are scanned for projects when the config names none: every
+// folder in home, see ProjectRoots for what is left out.
+var DefaultRoots = []string{"~/*"}
+
+// notProjects are home folders a "~/*" root never includes: system and app
+// data, and cloud-synced folders (deleting there deletes on every device).
+var notProjects = regexp.MustCompile(`^(Library|Applications|Public|OneDrive.*|Dropbox.*|Google Drive.*|Box|iCloud.*|\..*)$`)
+
+// ProjectRoots expands cfg.Roots to existing absolute folders. A root with a
+// glob ("~/*") expands to its folders minus notProjects and protected ones.
+func ProjectRoots(cfg Config, home string) []string {
+	var protected []string
+	for _, p := range cfg.Protected {
+		protected = append(protected, Expand(p, home))
+	}
+	var out []string
+	for _, r := range cfg.Roots {
+		r = Expand(r, home)
+		if !strings.ContainsAny(r, "*?[") {
+			if info, err := os.Stat(r); err == nil && info.IsDir() {
+				out = append(out, r)
+			}
+			continue
+		}
+		matches, _ := filepath.Glob(r)
+		for _, m := range matches {
+			info, err := os.Lstat(m)
+			if err != nil || !info.IsDir() || notProjects.MatchString(filepath.Base(m)) || slices.Contains(protected, m) {
+				continue
+			}
+			out = append(out, m)
+		}
+	}
+	return out
+}
 
 // DefaultProtected are never deleted, whatever a rule says.
 var DefaultProtected = []string{

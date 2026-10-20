@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/optimize"
@@ -17,22 +18,23 @@ import (
 )
 
 func optimizeCmd() *cobra.Command {
-	var apply, yes bool
+	var apply, yes, pick bool
 	var only []string
 	c := &cobra.Command{
 		Use:   "optimize",
 		Short: i18n.T("cmd.optimize"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runOptimize(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), apply, yes, only)
+			return runOptimize(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), apply, yes, pick, only)
 		},
 	}
 	c.Flags().BoolVar(&apply, "apply", false, "run the listed tasks (asks first)")
 	c.Flags().BoolVar(&yes, "yes", false, "do not ask for confirmation")
+	c.Flags().BoolVar(&pick, "pick", false, "choose tasks interactively")
 	c.Flags().StringSliceVar(&only, "only", nil, "tasks: timemachine, git-gc, brew-autoremove")
 	return c
 }
 
-func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, only []string) error {
+func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bool, only []string) error {
 	introGate(in, w, stdinIsTerminal())
 	rs, cfg, err := rules.Load(home)
 	if err != nil {
@@ -43,7 +45,7 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 		del = i18n.T("plan.delete.optimize")
 	}
 	ui.ShowPlan(w, ui.Plan{
-		Title: "swelo optimize", Scan: existingRoots(cfg.Roots, home),
+		Title: "swelo optimize", Scan: shortAll(rules.ProjectRoots(cfg, home), home),
 		Read: i18n.T("plan.read.optimize"), Delete: del, Perm: i18n.T("plan.perm.none"),
 		Duration: i18n.T("plan.time.clean"),
 	})
@@ -71,10 +73,7 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 			}
 		}
 	}
-	var roots []string
-	for _, r := range cfg.Roots {
-		roots = append(roots, rules.Expand(r, home))
-	}
+	roots := rules.ProjectRoots(cfg, home)
 	have := func(n string) bool { _, err := exec.LookPath(n); return err == nil }
 
 	var tasks []optimize.Task
@@ -116,13 +115,39 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 		fmt.Fprintf(w, "     %s\n", ui.Dim(i18n.T("opt.undo."+t.ID)))
 	}
 	fmt.Fprintln(w)
+	if pick && ready > 0 {
+		var items []ui.PickItem
+		var idx []int
+		for i, t := range tasks {
+			if t.Ready {
+				idx = append(idx, i)
+				items = append(items, ui.PickItem{Label: t.ID, Detail: i18n.T("opt." + t.ID)})
+			}
+		}
+		pk := ui.NewPicker(i18n.T("pick.optimize"), items)
+		for n := range pk.Selected {
+			pk.Selected[n] = true
+		}
+		if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
+			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
+			return nil
+		}
+		ready = 0
+		for n, i := range idx {
+			tasks[i].Ready = pk.Selected[n]
+			if pk.Selected[n] {
+				ready++
+			}
+		}
+		apply = true
+	}
 	if !apply || ready == 0 {
 		if ready > 0 {
 			fmt.Fprintf(w, " %s\n\n", ui.Dim(i18n.T("opt.hint")))
 		}
 		return nil
 	}
-	if !yes && !ui.Confirm(in, w, fmt.Sprintf(i18n.T("opt.confirm"), ready), false) {
+	if !yes && !ask(in, w, fmt.Sprintf(i18n.T("opt.confirm"), ready), pick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 		return nil
 	}
@@ -139,16 +164,6 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 	}
 	fmt.Fprintln(w)
 	return nil
-}
-
-func existingRoots(roots []string, home string) []string {
-	var out []string
-	for _, r := range roots {
-		if _, err := os.Stat(rules.Expand(r, home)); err == nil {
-			out = append(out, r)
-		}
-	}
-	return out
 }
 
 func contains(list []string, s string) bool {

@@ -65,10 +65,7 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 		Duration: i18n.T("plan.time.uninstall"),
 	})
 	fmt.Fprintf(w, " %s\n", ui.Dim(i18n.T("scanning")))
-	var roots []string
-	for _, r := range cfg.Roots {
-		roots = append(roots, rules.Expand(r, home))
-	}
+	roots := rules.ProjectRoots(cfg, home)
 	env := uninstall.NewEnv(home, roots)
 	st := ui.NewStatus(w)
 	env.Progress = func(id string, n int) {
@@ -148,7 +145,7 @@ func reviewAndRemove(in *bufio.Reader, w io.Writer, chosen []uninstall.Package, 
 		}
 	}
 	fmt.Fprintln(w)
-	if !o.yes && !ui.Confirm(in, w, fmt.Sprintf(i18n.T("uninstall.confirm"), len(chosen), ui.Bytes(total)), false) {
+	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("uninstall.confirm"), len(chosen), ui.Bytes(total)), o.pick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 		return nil
 	}

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
@@ -18,9 +19,9 @@ import (
 )
 
 type cleanOpts struct {
-	apply, risky, yes, all bool
-	only                   []string
-	recentDays             int
+	apply, risky, yes, all, pick bool
+	only                         []string
+	recentDays                   int
 }
 
 func cleanCmd() *cobra.Command {
@@ -37,6 +38,7 @@ func cleanCmd() *cobra.Command {
 	f.BoolVar(&o.risky, "risky", false, "include 🟡 rules")
 	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")
 	f.BoolVar(&o.all, "all", false, "list every item, not only the largest")
+	f.BoolVar(&o.pick, "pick", false, "choose what to delete interactively")
 	f.StringSliceVar(&o.only, "only", nil, "only these rule ids or groups (build, cache, docker, tools)")
 	f.IntVar(&o.recentDays, "recent-days", -1, "skip projects changed within N days (0 = off; default from config, 7)")
 	return c
@@ -65,7 +67,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	}
 	ui.ShowPlan(w, ui.Plan{
 		Title:    "swelo clean",
-		Scan:     append(existing(eng, cfg.Roots), "~/Library/Caches", "~/Library/Developer", "Docker"),
+		Scan:     append(shortAll(rules.ProjectRoots(cfg, home), home), "~/Library/Caches", "~/Library/Developer", "Docker"),
 		Read:     i18n.T("plan.read.clean"),
 		Delete:   del,
 		Perm:     i18n.T("plan.perm.none"),
@@ -101,11 +103,22 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	}
 	fmt.Fprintf(w, "   %s %s\n", i18n.T("disk.free"), ui.Bytes(before))
 
-	if !o.apply {
+	if o.pick {
+		var ok bool
+		if results, total, ok = pickResults(results); !ok {
+			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
+			return nil
+		}
+		if len(results) == 0 {
+			fmt.Fprintf(w, " %s\n\n", i18n.T("pick.none"))
+			return nil
+		}
+		o.risky = true // risky rules in results were ticked by the user
+	} else if !o.apply {
 		fmt.Fprintf(w, " %s\n\n", ui.Dim(i18n.T("hint.apply")))
 		return nil
 	}
-	if !o.yes && !ui.Confirm(in, w, fmt.Sprintf(i18n.T("confirm.delete"), ui.Bytes(total)), false) {
+	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("confirm.delete"), ui.Bytes(total)), o.pick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 		return nil
 	}
@@ -141,12 +154,10 @@ func matchesOnly(r rules.Rule, only []string) bool {
 	return false
 }
 
-func existing(eng *clean.Engine, roots []string) []string {
-	var out []string
-	for _, r := range roots {
-		if _, err := os.Stat(rules.Expand(r, eng.Home)); err == nil {
-			out = append(out, r)
-		}
+func shortAll(paths []string, home string) []string {
+	out := make([]string, len(paths))
+	for i, p := range paths {
+		out[i] = short(p, home)
 	}
 	return out
 }
@@ -245,4 +256,49 @@ func lastLines(s string, n int) string {
 		lines = lines[len(lines)-n:]
 	}
 	return strings.Join(lines, "\n")
+}
+
+// pickResults lets the user tick rules (🟢 ticked, 🟡 not) and returns the
+// ticked results with their total; ok is false if the picker was cancelled.
+func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok bool) {
+	var idx []int
+	for _, risk := range []string{rules.Safe, rules.Risky} {
+		for i, r := range results {
+			if r.Rule.Risk == risk && clean.Selected(r, true) && (len(r.Items) > 0 || r.Rule.Kind == "command" && r.Note == "") {
+				idx = append(idx, i)
+			}
+		}
+	}
+	items := make([]ui.PickItem, len(idx))
+	for n, i := range idx {
+		r := results[i]
+		size := ui.Bytes(r.Size)
+		if r.Rule.Kind == "command" && r.Size == 0 {
+			size = "?"
+		}
+		items[n] = ui.PickItem{Group: i18n.T("group." + r.Rule.Risk), Label: fmt.Sprintf("%9s  %s", size, r.Rule.ID), Detail: r.Rule.Description(i18n.Lang())}
+	}
+	pk := ui.NewPicker(i18n.T("pick.clean"), items)
+	for n, i := range idx {
+		pk.Selected[n] = clean.Selected(results[i], false)
+	}
+	if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
+		return nil, 0, false
+	}
+	for n, i := range idx {
+		if pk.Selected[n] {
+			chosen = append(chosen, results[i])
+			total += results[i].Size
+		}
+	}
+	return chosen, total, true
+}
+
+// ask is a yes/no question: a menu when picking, typed y/N otherwise.
+func ask(in *bufio.Reader, w io.Writer, q string, pick bool) bool {
+	if !pick {
+		return ui.Confirm(in, w, q, false)
+	}
+	fmt.Fprintln(w)
+	return ui.Choose(q, []ui.PickItem{{Label: i18n.T("choice.no")}, {Label: i18n.T("choice.yes")}}) == 1
 }

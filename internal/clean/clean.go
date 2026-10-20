@@ -79,9 +79,7 @@ func (e *Engine) report(p Progress) {
 func New(home string, rs []rules.Rule, cfg rules.Config) *Engine {
 	e := &Engine{Home: home, Cfg: cfg, Rules: rs}
 	var roots, protected, names []string
-	for _, r := range cfg.Roots {
-		e.projects = append(e.projects, rules.Expand(r, home))
-	}
+	e.projects = rules.ProjectRoots(cfg, home)
 	roots = append(roots, e.projects...)
 	for _, p := range cfg.Protected {
 		protected = append(protected, rules.Expand(p, home))
@@ -262,7 +260,9 @@ func (e *Engine) walkArtifacts(results []Result, idx []int) {
 					return filepath.SkipDir
 				}
 			}
-			if e.excluded(p) {
+			// hidden folders (.vscode, .npm…) hold tools' own data, and go/pkg is
+			// Go's module cache: their package.json files are not projects
+			if e.excluded(p) || (strings.HasPrefix(name, ".") && p != real) || p == filepath.Join(e.Home, "go", "pkg") {
 				return filepath.SkipDir
 			}
 			return nil

@@ -70,10 +70,7 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 
 	eng := clean.New(home, rs, cfg)
 	eng.FDA = fda
-	var roots []string
-	for _, r := range cfg.Roots {
-		roots = append(roots, rules.Expand(r, home))
-	}
+	roots := rules.ProjectRoots(cfg, home)
 	cats := analyze.Categories(home, roots)
 
 	done := make(chan []clean.Result)

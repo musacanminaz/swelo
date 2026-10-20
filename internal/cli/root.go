@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,9 @@ func Execute() error {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if introFlag {
 				os.Remove(introMarker())
+			}
+			if stdinIsTerminal() && ui.IsTerminal(os.Stdout) {
+				return runMenu(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home())
 			}
 			welcome(cmd.OutOrStdout())
 			return nil
@@ -110,22 +114,25 @@ func permissionsCmd() *cobra.Command {
 		Use:   "permissions",
 		Short: i18n.T("cmd.permissions"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			w := cmd.OutOrStdout()
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, ui.Indent(i18n.T("permdoc.intro"), " "))
-			fmt.Fprintln(w)
-			permSummary(w)
-			for _, s := range []struct{ title, body string }{
-				{i18n.T("perm.user"), i18n.T("permdoc.user")},
-				{i18n.T("perm.fda"), i18n.T("permdoc.fda")},
-				{i18n.T("perm.sudo"), i18n.T("permdoc.sudo")},
-				{"Network", i18n.T("permdoc.net")},
-			} {
-				fmt.Fprintf(w, "\n %s\n%s\n", ui.Bold(s.title), ui.Indent(s.body, "   "))
-			}
-			fmt.Fprintf(w, "\n %s\n   %s\n   %s\n\n", ui.Bold(i18n.T("permdoc.files")),
-				filepath.Join(configDir(), "config.yaml"), filepath.Join(stateDir(), "history.jsonl"))
+			printPermissions(cmd.OutOrStdout())
 			return nil
 		},
 	}
+}
+
+func printPermissions(w io.Writer) {
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, ui.Indent(i18n.T("permdoc.intro"), " "))
+	fmt.Fprintln(w)
+	permSummary(w)
+	for _, s := range []struct{ title, body string }{
+		{i18n.T("perm.user"), i18n.T("permdoc.user")},
+		{i18n.T("perm.fda"), i18n.T("permdoc.fda")},
+		{i18n.T("perm.sudo"), i18n.T("permdoc.sudo")},
+		{"Network", i18n.T("permdoc.net")},
+	} {
+		fmt.Fprintf(w, "\n %s\n%s\n", ui.Bold(s.title), ui.Indent(s.body, "   "))
+	}
+	fmt.Fprintf(w, "\n %s\n   %s\n   %s\n\n", ui.Bold(i18n.T("permdoc.files")),
+		filepath.Join(configDir(), "config.yaml"), filepath.Join(stateDir(), "history.jsonl"))
 }
