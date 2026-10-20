@@ -26,6 +26,20 @@ func fakeEnv(t *testing.T) *Env {
 	mkfile(t, filepath.Join(home, "code", "legacy", ".nvmrc"), "v18\n")
 	mkfile(t, filepath.Join(home, "jdk", "zulu-17.jdk", "x"), "x")
 	mkfile(t, filepath.Join(home, "jdk", "temurin-21.jdk", "x"), "x")
+	apps := filepath.Join(home, "Applications")
+	for _, a := range []string{"Foo", "Bar", "Busy", "Pages"} {
+		mkfile(t, filepath.Join(apps, a+".app", "Contents", "Info.plist"), "")
+		mkfile(t, filepath.Join(apps, a+".app", "Contents", "MacOS", a), "bin")
+	}
+	lib := filepath.Join(home, "Library")
+	mkfile(t, filepath.Join(lib, "Application Support", "com.foo.app", "db"), "x")
+	mkfile(t, filepath.Join(lib, "Caches", "com.foo.app", "c"), "x")
+	mkfile(t, filepath.Join(lib, "Preferences", "com.foo.app.plist"), "x")
+	mkfile(t, filepath.Join(lib, "Containers", "com.foo.app", "x"), "x")
+	mkfile(t, filepath.Join(lib, "Preferences", "com.other.plist"), "x")
+	mkfile(t, filepath.Join(apps, "Docker.app", "Contents", "Info.plist"), "")
+	mkfile(t, filepath.Join(lib, "Containers", "com.docker.docker", "Data", "Docker.raw"), "volumes")
+	mkfile(t, filepath.Join(lib, "Caches", "com.docker.docker", "c"), "x")
 	mkfile(t, filepath.Join(home, "android", "cmdline-tools", "latest", "bin", "sdkmanager"), "")
 	mkfile(t, filepath.Join(home, "android", "build-tools", "34.0.0", "x"), "x")
 	mkfile(t, filepath.Join(home, "code", "app", ".tool-versions"), "nodejs 22.14.0\npython 3.12.1\n")
@@ -38,7 +52,13 @@ func fakeEnv(t *testing.T) *Env {
 		"brew --cellar":                     filepath.Join(home, "cellar"),
 		"brew --caskroom":                   filepath.Join(home, "caskroom"),
 		"brew list --cask":                  "temurin@21\nfirefox\n",
-		"ollama list":                       "NAME        ID      SIZE    MODIFIED\nllama3:8b   abc     4.7 GB  3 weeks ago\n",
+		"plutil -extract CFBundleIdentifier raw " + filepath.Join(home, "Applications", "Foo.app", "Contents", "Info.plist"):    "com.foo.app\n",
+		"plutil -extract CFBundleIdentifier raw " + filepath.Join(home, "Applications", "Bar.app", "Contents", "Info.plist"):    "com.bar\n",
+		"plutil -extract CFBundleIdentifier raw " + filepath.Join(home, "Applications", "Busy.app", "Contents", "Info.plist"):   "com.busy\n",
+		"plutil -extract CFBundleIdentifier raw " + filepath.Join(home, "Applications", "Pages.app", "Contents", "Info.plist"):  "com.apple.iWork.Pages\n",
+		"plutil -extract CFBundleIdentifier raw " + filepath.Join(home, "Applications", "Docker.app", "Contents", "Info.plist"): "com.docker.docker\n",
+		"brew info --cask --json=v2 --installed": `{"casks":[{"token":"bar-app","artifacts":[{"app":["Bar.app"]}]}]}`,
+		"ollama list":                            "NAME        ID      SIZE    MODIFIED\nllama3:8b   abc     4.7 GB  3 weeks ago\n",
 	}
 	return &Env{
 		Home:  home,
@@ -51,6 +71,8 @@ func fakeEnv(t *testing.T) *Env {
 		},
 		Look:       func(n string) bool { return n != "npm" && n != "cursor" },
 		JDKDir:     filepath.Join(home, "jdk"),
+		AppDirs:    []string{filepath.Join(home, "Applications")},
+		Running:    func(app string) bool { return strings.HasSuffix(app, "Busy.app") },
 		AndroidSDK: filepath.Join(home, "android"),
 	}
 }
@@ -103,6 +125,37 @@ func TestList(t *testing.T) {
 	}
 	if a := ps["android:build-tools;34.0.0"]; a.Command[1] != "--uninstall" || a.Command[2] != "build-tools;34.0.0" {
 		t.Errorf("android = %+v", a)
+	}
+	foo := ps["app:Foo.app"]
+	cmd := strings.Join(foo.Command, " ")
+	if foo.Command[0] != "/usr/bin/trash" || !strings.Contains(cmd, "Application Support/com.foo.app") ||
+		!strings.Contains(cmd, "com.foo.app.plist") || strings.Contains(cmd, "com.other") {
+		t.Errorf("foo = %v", foo.Command)
+	}
+	if strings.Contains(cmd, "Containers") {
+		t.Error("app Containers must not be touched without Full Disk Access")
+	}
+	if b := ps["app:Bar.app"]; strings.Join(b.Command, " ") != "brew uninstall --cask bar-app" {
+		t.Errorf("bar = %+v", b)
+	}
+	if _, dup := ps["cask:bar-app"]; dup {
+		t.Error("cask app listed twice")
+	}
+	e2 := fakeEnv(t)
+	e2.FDA = true
+	for _, p := range List(e2, []string{"app"}) {
+		if p.ID == "app:Docker.app" {
+			c := strings.Join(p.Command, " ")
+			if strings.Contains(c, "Containers/com.docker.docker") || !strings.Contains(c, "Caches/com.docker.docker") {
+				t.Errorf("docker leftovers = %v (its container holds every volume)", p.Command)
+			}
+		}
+	}
+	if b := ps["app:Busy.app"]; b.Command != nil {
+		t.Errorf("running app must not be removable: %+v", b)
+	}
+	if _, ok := ps["app:Pages.app"]; ok {
+		t.Error("Apple apps must not be listed")
 	}
 	for _, p := range ps {
 		if len(p.Command) == 0 && p.Note == "" {

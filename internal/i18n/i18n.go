@@ -230,6 +230,7 @@ var msgs = map[string][2]string{
 	"plan.perm.uninstall":   {"normal user; removing a JDK later needs sudo and is asked separately", "normal kullanıcı; JDK kaldırmak ileride sudo ister ve ayrıca sorulur"},
 	"plan.time.uninstall":   {"5–30 s", "5–30 sn"},
 	"uninstall.next":        {"Nothing was removed. Removing is done with each tool's own uninstaller (shown before it runs).", "Hiçbir şey kaldırılmadı. Kaldırma, her aracın kendi kaldırma komutuyla yapılır (çalışmadan önce gösterilir)."},
+	"prov.app":              {"Applications (with their ~/Library leftovers)", "Uygulamalar (~/Library'deki artıklarıyla)"},
 	"prov.simruntime":       {"Simulator runtimes", "Simülatör runtime'ları"},
 	"prov.android":          {"Android SDK packages", "Android SDK paketleri"},
 	"prov.brew":             {"Homebrew (installed on request)", "Homebrew (isteyerek kurulanlar)"},

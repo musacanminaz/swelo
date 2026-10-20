@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/musacanminaz/swelo/internal/clean"
+	"github.com/musacanminaz/swelo/internal/perm"
 )
 
 // Package is one removable item.
@@ -38,6 +39,9 @@ type Env struct {
 	Look  func(name string) bool
 	// System locations, replaceable in tests.
 	JDKDir, AndroidSDK string
+	AppDirs            []string
+	FDA                bool                  // Full Disk Access: app Containers may be read
+	Running            func(app string) bool // is this .app running
 	pins               map[string][]pin
 }
 
@@ -52,8 +56,11 @@ func NewEnv(home string, roots []string) *Env {
 			out, err := exec.Command(argv[0], argv[1:]...).Output()
 			return string(out), err
 		},
-		Look:   func(name string) bool { _, err := exec.LookPath(name); return err == nil },
-		JDKDir: "/Library/Java/JavaVirtualMachines",
+		Look:    func(name string) bool { _, err := exec.LookPath(name); return err == nil },
+		JDKDir:  "/Library/Java/JavaVirtualMachines",
+		AppDirs: []string{"/Applications", filepath.Join(home, "Applications")},
+		FDA:     perm.FullDiskAccess(home),
+		Running: runningApps(),
 		AndroidSDK: func() string {
 			if s := os.Getenv("ANDROID_HOME"); s != "" {
 				return s
@@ -71,6 +78,7 @@ type Provider struct {
 
 // Providers in display order.
 var Providers = []Provider{
+	{"app", apps},
 	{"simruntime", simRuntimes},
 	{"android", androidSDK},
 	{"brew", brew},
@@ -84,8 +92,8 @@ var Providers = []Provider{
 	{"ollama", ollamaModels},
 }
 
-// List runs every provider whose tool is present. A cask that is also listed
-// as a JDK is shown once, as the JDK.
+// List runs every provider whose tool is present. A cask that another provider
+// already removes through brew (a JDK, an app) is shown once.
 func List(e *Env, only []string) []Package {
 	var all []Package
 	for _, p := range Providers {
@@ -96,7 +104,7 @@ func List(e *Env, only []string) []Package {
 	}
 	viaJDK := map[string]bool{}
 	for _, p := range all {
-		if p.Provider == "jdk" && len(p.Command) == 4 && p.Command[0] == "brew" {
+		if p.Provider != "brew" && len(p.Command) == 4 && p.Command[0] == "brew" && p.Command[2] == "--cask" {
 			viaJDK["cask:"+p.Command[3]] = true
 		}
 	}
@@ -485,4 +493,12 @@ func SortBySize(ps []Package) {
 		}
 		return ps[i].Size > ps[j].Size
 	})
+}
+
+// runningApps snapshots running processes once and reports whether an .app's
+// executable is among them.
+func runningApps() func(string) bool {
+	out, _ := exec.Command("ps", "-axo", "comm=").Output()
+	procs := string(out)
+	return func(app string) bool { return strings.Contains(procs, app+"/Contents/MacOS/") }
 }

@@ -45,7 +45,7 @@ Formula/swelo.rb after tagging.
 - [x] `swelo uninstall [--only …]` listing; provider tests with a fake Env (no real commands)
 - [x] `--pick` (bubbletea multi-select) and `--remove <id,...>`; review lists every exact command + warnings (pinned by projects, defaults, containers), one confirmation, sudo steps asked separately via ui.RunSudo (`--yes` never approves them, `--no-sudo` skips), commands run attached to the terminal, every attempt logged
 - [x] JDKs installed by a Homebrew cask are removed with `brew uninstall --cask` (not rm) and listed once
-- [ ] Apps tab: /Applications + leftovers by bundle id
+- [x] Apps: /Applications + ~/Applications with ~/Library leftovers by bundle id (Containers/Group Containers only with Full Disk Access; protected paths such as Docker's disk image never included); moved to the Trash; cask apps via `brew uninstall --cask`; running apps, root-owned apps and Apple apps not removable
 ## Phase 5 — optimize, status, history
 ## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
 ## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)

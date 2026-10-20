@@ -35,7 +35,7 @@ func uninstallCmd() *cobra.Command {
 		},
 	}
 	f := c.Flags()
-	f.StringSliceVar(&o.only, "only", nil, "providers: simruntime, android, brew, node, python, rust, jdk, npm-global, docker-image, vscode, ollama")
+	f.StringSliceVar(&o.only, "only", nil, "providers: app, simruntime, android, brew, node, python, rust, jdk, npm-global, docker-image, vscode, ollama")
 	f.BoolVar(&o.pick, "pick", false, "choose what to uninstall interactively")
 	f.StringSliceVar(&o.remove, "remove", nil, "uninstall these ids (shown in the list)")
 	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")

@@ -16,3 +16,13 @@ func TestReasonTR(t *testing.T) {
 		}
 	}
 }
+
+func TestUninstallNotesTranslated(t *testing.T) {
+	Set("tr")
+	defer Set("en")
+	for _, s := range []string{"running — quit it first", "moves the app to the Trash", "nvm default", "installed by Homebrew cask x"} {
+		if Reason(s) == s {
+			t.Errorf("no Turkish for %q", s)
+		}
+	}
+}
