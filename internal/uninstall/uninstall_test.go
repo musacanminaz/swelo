@@ -190,3 +190,18 @@ func TestRemove(t *testing.T) {
 		t.Errorf("log = %s", b)
 	}
 }
+
+func TestLeftoversRejectHostileIDs(t *testing.T) {
+	home, _ := filepath.EvalSymlinks(t.TempDir())
+	mkfile(t, filepath.Join(home, "Desktop", "thesis.docx"), "x")
+	mkfile(t, filepath.Join(home, "Library", "Caches", "ok.app", "c"), "x")
+	e := &Env{Home: home}
+	for _, id := range []string{"../../Desktop", "..", "a/../../Desktop", "*", "", "x\x00y"} {
+		if got := e.leftovers(id, "App"); len(got) != 0 {
+			t.Errorf("id %q produced leftovers %v", id, got)
+		}
+	}
+	if got := e.leftovers("ok.app", "../../Desktop"); len(got) != 1 || !strings.HasSuffix(got[0], "Caches/ok.app") {
+		t.Errorf("hostile name must not add paths: %v", got)
+	}
+}

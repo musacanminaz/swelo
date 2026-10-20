@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -89,8 +90,13 @@ func (e *Env) appPackage(app string, casks map[string]string) Package {
 // leftovers are an app's own folders and files in ~/Library. Containers and
 // Group Containers are only looked at with Full Disk Access.
 func (e *Env) leftovers(id, name string) []string {
-	if id == "" {
+	// Info.plist is untrusted: a bundle id like "../../Desktop" must not
+	// turn into a path outside ~/Library.
+	if !bundleRe.MatchString(id) || strings.Contains(id, "..") {
 		return nil
+	}
+	if !nameRe.MatchString(name) || name == "." || name == ".." {
+		name = id // fall back to id-only candidates
 	}
 	lib := filepath.Join(e.Home, "Library")
 	cands := []string{
@@ -106,15 +112,15 @@ func (e *Env) leftovers(id, name string) []string {
 	}
 	if e.FDA {
 		cands = append(cands, filepath.Join(lib, "Containers", id))
-		gc, _ := filepath.Glob(filepath.Join(lib, "Group Containers", "*."+id))
-		cands = append(cands, gc...)
+		cands = append(cands, matching(filepath.Join(lib, "Group Containers"), func(n string) bool { return strings.HasSuffix(n, "."+id) })...)
 	}
-	la, _ := filepath.Glob(filepath.Join(lib, "LaunchAgents", id+"*.plist"))
-	cands = append(cands, la...)
+	cands = append(cands, matching(filepath.Join(lib, "LaunchAgents"), func(n string) bool {
+		return strings.HasPrefix(n, id) && strings.HasSuffix(n, ".plist")
+	})...)
 	var out []string
 	seen := map[string]bool{}
 	for _, c := range cands {
-		if seen[c] || filepath.Base(c) == "" || e.protectedPath(c) {
+		if seen[c] || e.protectedPath(c) || !directlyUnder(c, lib) {
 			continue
 		}
 		seen[c] = true
@@ -182,4 +188,28 @@ func (e *Env) protectedPath(p string) bool {
 		}
 	}
 	return false
+}
+
+var (
+	bundleRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	nameRe   = regexp.MustCompile(`^[^/\x00-\x1f]+$`)
+)
+
+// directlyUnder reports whether p is exactly two levels below lib
+// (~/Library/<folder>/<entry>), so no candidate can escape its folder.
+func directlyUnder(p, lib string) bool {
+	return filepath.Clean(p) == p && filepath.Dir(filepath.Dir(p)) == lib
+}
+
+// matching lists entries of dir whose names satisfy ok (a literal alternative
+// to filepath.Glob, so an id cannot inject glob patterns).
+func matching(dir string, ok func(string) bool) []string {
+	entries, _ := os.ReadDir(dir)
+	var out []string
+	for _, en := range entries {
+		if ok(en.Name()) {
+			out = append(out, filepath.Join(dir, en.Name()))
+		}
+	}
+	return out
 }
