@@ -2,7 +2,7 @@
 
 Disk care for developer Macs. / Developer Mac'leri için disk bakımı.
 
-> **Status: `clean` and `analyze` are ready; `uninstall`, `optimize`, `status` are in progress.**
+> **Status: all commands are available; feedback welcome.**
 > See [PROGRESS.md](PROGRESS.md).
 
 swelo finds files that pile up during development and can be regenerated — `node_modules`,
@@ -29,7 +29,7 @@ Run `swelo permissions` to see every permission swelo may use and why.
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
 | `swelo uninstall` | Lists apps (with their ~/Library leftovers) and developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <id>` uninstalls with each tool's own command after showing it | ✅ |
 | `swelo optimize` | Time Machine exclusions for regenerable folders, `git gc` on large repos, `brew autoremove` (dry run unless `--apply`) | ✅ |
-| `swelo status` | Disk status and history | planned |
+| `swelo status` / `swelo history` | Disk status, free-space trend, recent cleanups / full log of everything swelo removed | ✅ |
 
 Output language follows your system (Turkish or English); override with `--lang tr|en`.
 

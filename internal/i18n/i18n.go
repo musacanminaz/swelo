@@ -280,4 +280,13 @@ var msgs = map[string][2]string{
 	"opt.nothing":               {"nothing to do", "yapılacak bir şey yok"},
 	"opt.hint":                  {"Nothing was changed. Run `swelo optimize --apply` to run the ● tasks.", "Hiçbir şey değiştirilmedi. ● görevleri çalıştırmak için: swelo optimize --apply"},
 	"opt.confirm":               {"Run %d tasks?", "%d görev çalıştırılsın mı?"},
+
+	"cmd.history":   {"Everything swelo deleted or uninstalled", "swelo'nun sildiği veya kaldırdığı her şey"},
+	"status.free":   {"free", "boş"},
+	"status.trend":  {"%s: %s free → now %s", "%s: %s boştu → şimdi %s"},
+	"status.never":  {"No cleanups yet. Start with `swelo analyze` or `swelo clean`.", "Henüz temizlik yok. `swelo analyze` veya `swelo clean` ile başlayın."},
+	"status.recent": {"Recent cleanups", "Son temizlikler"},
+	"status.items":  {"%d items", "%d öğe"},
+	"status.more":   {"Details: swelo history", "Ayrıntılar: swelo history"},
+	"history.file":  {"Full log:", "Tam log:"},
 }

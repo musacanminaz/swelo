@@ -49,7 +49,8 @@ Formula/swelo.rb after tagging.
 ## Phase 5 — optimize, status, history
 - [x] `swelo optimize` (dry run; --apply): Time Machine sticky exclusions for regenerable folders (skipped when TM is not set up), `git gc` + `worktree prune` on repos with .git ≥ 200 MB (locked/busy repos skipped, repo hooks/fsmonitor disabled), `brew autoremove`
 - Dropped from the plan after checking: Spotlight `.metadata_never_index` (not honored in subfolders on current macOS), Docker.raw compaction (no verified method for current Docker Desktop — `analyze` reports allocated vs max instead)
-- [ ] `swelo status`: disk, Docker.raw, last cleanups, 30-day free-space trend
-- [ ] `swelo history`
+- [x] `swelo status`: disk (colored at 80/90%), Docker.raw, free-space trend from hourly snapshots (shown once ≥ 1 day old), cleanups per day
+- [x] `swelo history [-n N]`: every deletion/uninstall with time, size, rule, path
+- [x] optimize hardening: repos with command-running config keys or another owner are skipped; TM exclusions only for guard-approved items
 ## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
 ## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)
