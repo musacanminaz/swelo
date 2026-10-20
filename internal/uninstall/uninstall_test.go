@@ -208,3 +208,19 @@ func TestLeftoversRejectHostileIDs(t *testing.T) {
 		t.Errorf("hostile name must not add paths: %v", got)
 	}
 }
+
+func TestGroupContainerOf(t *testing.T) {
+	cases := map[[2]string]bool{
+		{"group.com.foo.app", "com.foo.app"}:             true,
+		{"ABCDE12345.com.foo.app", "com.foo.app"}:        true,
+		{"6N38VWS5BX.ru.keepcoder.Telegram", "Telegram"}: false,
+		{"XYZ.com.foo.app", "com.foo.app"}:               false,
+		{"ABCDE12345.com.foo.app.helper", "com.foo.app"}: false,
+		{"group.com.apple.notes", "com.apple.notes"}:     false,
+	}
+	for in, want := range cases {
+		if got := groupContainerOf(in[0], in[1]); got != want {
+			t.Errorf("groupContainerOf(%q, %q) = %v", in[0], in[1], got)
+		}
+	}
+}

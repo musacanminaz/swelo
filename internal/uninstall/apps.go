@@ -112,7 +112,7 @@ func (e *Env) leftovers(id, name string) []string {
 	}
 	if e.FDA {
 		cands = append(cands, filepath.Join(lib, "Containers", id))
-		cands = append(cands, matching(filepath.Join(lib, "Group Containers"), func(n string) bool { return strings.HasSuffix(n, "."+id) })...)
+		cands = append(cands, matching(filepath.Join(lib, "Group Containers"), func(n string) bool { return groupContainerOf(n, id) })...)
 	}
 	cands = append(cands, matching(filepath.Join(lib, "LaunchAgents"), func(n string) bool {
 		return n == id+".plist" || (strings.HasPrefix(n, id+".") && strings.HasSuffix(n, ".plist"))
@@ -212,4 +212,19 @@ func matching(dir string, ok func(string) bool) []string {
 		}
 	}
 	return out
+}
+
+var teamPrefix = regexp.MustCompile(`^[A-Z0-9]{10}\.`)
+
+// groupContainerOf matches only "group.<id>" and "<TEAMID>.<id>", never a bare
+// suffix (an id "Telegram" must not catch "6N38VWS5BX.ru.keepcoder.Telegram"),
+// and never Apple's own containers.
+func groupContainerOf(name, id string) bool {
+	if strings.Contains(name, "com.apple.") || strings.Count(id, ".") < 1 {
+		return false
+	}
+	if name == "group."+id {
+		return true
+	}
+	return teamPrefix.MatchString(name) && name[11:] == id
 }
