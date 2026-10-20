@@ -42,7 +42,7 @@ func Execute() error {
 	}
 	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
 	root.Flags().BoolVar(&introFlag, "intro", false, "show the first-run introduction again before the next scan")
-	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd())
+	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd(), uninstallCmd())
 	return root.Execute()
 }
 

@@ -40,6 +40,11 @@ Formula/swelo.rb after tagging.
 - [x] `--full` uses Full Disk Access folders
 
 ## Phase 4 — uninstall
+- [x] Providers (list, read-only): simulator runtimes (real last-used date), Android SDK (sdkmanager ids), Homebrew leaves + casks, nvm Node, pyenv Python, rustup, JDKs (sudo), global npm, Docker images (container use), VS Code/Cursor extensions, Ollama
+- [x] "Pinned by" from .nvmrc / .node-version / .python-version / .tool-versions in project roots; nvm/rustup defaults flagged
+- [x] `swelo uninstall [--only …]` listing; provider tests with a fake Env (no real commands)
+- [ ] Interactive multi-select, confirmation showing every exact command, run (sudo via ui.RunSudo), log
+- [ ] Apps tab: /Applications + leftovers by bundle id
 ## Phase 5 — optimize, status, history
 ## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
 ## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)

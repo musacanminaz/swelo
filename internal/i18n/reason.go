@@ -4,18 +4,24 @@ import "strings"
 
 // reasonsTR translates skip reasons produced by safety and clean.
 var reasonsTR = map[string]string{
-	"not an absolute path":                 "mutlak yol değil",
-	"does not exist":                       "yok",
-	"cannot resolve parent":                "üst klasör çözülemedi",
-	"home or root directory":               "ev veya kök klasör",
-	"outside allowed roots":                "izin verilen klasörlerin dışında",
-	"protected path":                       "korumalı yol",
-	"is an allowed root itself":            "taranan kök klasörün kendisi",
-	"environment file":                     "ortam dosyası (.env)",
-	"tracked by git":                       "git'te takip ediliyor",
-	"excluded in config":                   "ayarlarda hariç tutulmuş",
-	"a process is running in this project": "bu projede çalışan bir süreç var",
-	"newest version, kept":                 "en yeni sürüm, korunuyor",
+	"not an absolute path":                     "mutlak yol değil",
+	"does not exist":                           "yok",
+	"cannot resolve parent":                    "üst klasör çözülemedi",
+	"home or root directory":                   "ev veya kök klasör",
+	"outside allowed roots":                    "izin verilen klasörlerin dışında",
+	"protected path":                           "korumalı yol",
+	"is an allowed root itself":                "taranan kök klasörün kendisi",
+	"environment file":                         "ortam dosyası (.env)",
+	"tracked by git":                           "git'te takip ediliyor",
+	"excluded in config":                       "ayarlarda hariç tutulmuş",
+	"a process is running in this project":     "bu projede çalışan bir süreç var",
+	"newest version, kept":                     "en yeni sürüm, korunuyor",
+	"nvm default":                              "nvm varsayılanı",
+	"rustup default":                           "rustup varsayılanı",
+	"app size not included":                    "uygulama boyutu dahil değil",
+	"used by a container (stopped or running)": "bir container kullanıyor (durmuş veya çalışan)",
+	"root-owned; if installed with Homebrew, uninstall the cask instead": "root'a ait; Homebrew ile kurulduysa cask'ı kaldırın",
+	"not deletable (bundled with Xcode)":                                 "silinemez (Xcode ile geliyor)",
 }
 
 // reasonPrefixesTR translates reasons that carry a value, e.g. "in use (SingletonLock)".
