@@ -225,6 +225,9 @@ func skipSummary(skips []clean.Item, all bool, home string) string {
 }
 
 func short(p, home string) string {
+	if p == home {
+		return "~"
+	}
 	if strings.HasPrefix(p, home+"/") {
 		return "~" + p[len(home):]
 	}

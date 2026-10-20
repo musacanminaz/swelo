@@ -20,16 +20,25 @@ import (
 )
 
 func analyzeCmd() *cobra.Command {
-	var full bool
+	var full, browse bool
 	var top int
 	c := &cobra.Command{
-		Use:   "analyze",
+		Use:   "analyze [folder]",
 		Short: i18n.T("cmd.analyze"),
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if browse || len(args) == 1 {
+				dir := home()
+				if len(args) == 1 {
+					dir = args[0]
+				}
+				return runTree(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), dir, full)
+			}
 			return runAnalyze(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), full, top, stdinIsTerminal())
 		},
 	}
 	c.Flags().BoolVar(&full, "full", false, "also measure folders macOS protects (needs Full Disk Access)")
+	c.Flags().BoolVar(&browse, "tree", false, "browse folders interactively (ncdu-like); d moves to Trash")
 	c.Flags().IntVar(&top, "top", 10, "rows in the file and project lists")
 	return c
 }

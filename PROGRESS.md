@@ -35,7 +35,8 @@ Formula/swelo.rb after tagging.
 - [x] Projects list: regenerable size, last change (> 90 days highlighted)
 - [x] macOS-protected folders (Containers, Group Containers, Mail, Messages, Trash…) are never read without --full + Full Disk Access, in analyze and clean, so no privacy dialogs pop up
 - [x] Test: every i18n key used in code exists
-- [ ] TUI tree (ncdu-like), delete = move to Trash
+- [x] TUI tree: `swelo analyze --tree [folder]` (bubbletea); d → confirm → macOS `/usr/bin/trash` (fallback: rename into ~/.Trash); refuses home, scan root, outside home, ~/Library and its direct children, protected folders
+- [x] Real TTY detection via ioctl (/dev/null is not a terminal)
 - [x] `--full` uses Full Disk Access folders
 
 ## Phase 4 — uninstall

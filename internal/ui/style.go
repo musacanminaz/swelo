@@ -6,15 +6,22 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"golang.org/x/sys/unix"
 )
 
 var color = func() bool {
 	if os.Getenv("NO_COLOR") != "" {
 		return false
 	}
-	fi, err := os.Stdout.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+	return IsTerminal(os.Stdout)
 }()
+
+// IsTerminal reports whether f is a real terminal (not /dev/null or a pipe).
+func IsTerminal(f *os.File) bool {
+	_, err := unix.IoctlGetTermios(int(f.Fd()), unix.TIOCGETA)
+	return err == nil
+}
 
 func ansi(code, s string) string {
 	if !color {

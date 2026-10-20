@@ -211,4 +211,16 @@ var msgs = map[string][2]string{
 	"analyze.today":     {"changed today", "bugün değişti"},
 	"more.top":          {"… %d more (--top N shows more)", "… %d öğe daha (--top N ile daha fazlası)"},
 	"analyze.next":      {"Nothing was deleted. Next: `swelo clean` shows exactly what would be removed.", "Hiçbir şey silinmedi. Sonraki adım: `swelo clean` neyin silineceğini tam olarak gösterir."},
+
+	"tree.help":      {"↑↓ move · enter/→ open · ←/backspace up · d move to Trash · q quit", "↑↓ gez · enter/→ aç · ←/backspace üst klasör · d Çöp'e taşı · q çık"},
+	"tree.denied":    {"(not read)", "(okunmadı)"},
+	"tree.small":     {"%d small files", "%d küçük dosya"},
+	"tree.confirm":   {"Move %s (%s) to the Trash? [y/N]", "%s (%s) Çöp'e taşınsın mı? [e/H]"},
+	"tree.cancelled": {"Cancelled.", "İptal edildi."},
+	"tree.trashed":   {"Moved %s to the Trash (%s). Empty the Trash to free the space.", "%s Çöp'e taşındı (%s). Yer açmak için Çöp'ü boşaltın."},
+	"tree.refused":   {"Not allowed here: %s.", "Burada izin yok: %s."},
+	"tree.summary":   {"Moved %s to the Trash in this session.", "Bu oturumda Çöp'e taşınan: %s."},
+
+	"plan.delete.tree": {"only what you select with d and confirm — moved to the Trash, not erased", "sadece d ile seçip onayladıklarınız — kalıcı silinmez, Çöp'e taşınır"},
+	"tree.needtty":     {"the tree view needs an interactive terminal", "ağaç görünümü etkileşimli bir terminal gerektirir"},
 }

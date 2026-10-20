@@ -30,7 +30,4 @@ func introGate(in *bufio.Reader, w io.Writer, interactive bool) {
 	}
 }
 
-func stdinIsTerminal() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
-}
+func stdinIsTerminal() bool { return ui.IsTerminal(os.Stdin) }
