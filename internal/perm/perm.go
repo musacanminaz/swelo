@@ -2,9 +2,12 @@
 package perm
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -68,4 +71,45 @@ func Isolate(cmd *exec.Cmd) *exec.Cmd {
 		cmd.SysProcAttr.Setsid = true
 	}
 	return cmd
+}
+
+// TerminalNeighbours lists processes on this process's terminal other than
+// itself and its ancestors (the shell, the terminal app): background jobs or
+// leftovers that could also use sudo credentials cached for this terminal.
+func TerminalNeighbours() []string {
+	out, err := exec.Command("ps", "-ax", "-o", "pid=,ppid=,tty=,comm=").Output()
+	if err != nil {
+		return nil
+	}
+	type proc struct {
+		ppid      int
+		tty, name string
+	}
+	procs := map[int]proc{}
+	for _, l := range strings.Split(string(out), "\n") {
+		f := strings.Fields(l)
+		if len(f) < 4 {
+			continue
+		}
+		pid, _ := strconv.Atoi(f[0])
+		ppid, _ := strconv.Atoi(f[1])
+		procs[pid] = proc{ppid, f[2], strings.Join(f[3:], " ")}
+	}
+	self := os.Getpid()
+	tty := procs[self].tty
+	if tty == "" || tty == "??" {
+		return nil
+	}
+	mine := map[int]bool{}
+	for p := self; p > 1 && !mine[p]; p = procs[p].ppid {
+		mine[p] = true
+	}
+	var list []string
+	for pid, p := range procs {
+		if p.tty == tty && !mine[pid] && !(p.ppid == self && filepath.Base(p.name) == "ps") {
+			list = append(list, fmt.Sprintf("%d %s", pid, filepath.Base(p.name)))
+		}
+	}
+	sort.Strings(list)
+	return list
 }

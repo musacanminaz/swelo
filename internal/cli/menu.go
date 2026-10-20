@@ -136,6 +136,15 @@ func permissionsMenu(in *bufio.Reader, w io.Writer, home string) {
 				fmt.Fprintf(w, " %s %s\n", ui.Yellow("!"), i18n.T("perm.sudo.notadmin"))
 			default:
 				fmt.Fprintf(w, "\n%s\n\n", ui.Indent(i18n.T("perm.sudo.explain"), " "))
+				if n := perm.TerminalNeighbours(); len(n) > 0 {
+					fmt.Fprintf(w, " %s %s\n", ui.Yellow("!"), i18n.T("perm.sudo.neighbours"))
+					for _, p := range n {
+						fmt.Fprintf(w, "     %s\n", ui.Safe(p))
+					}
+					if ui.Choose(i18n.T("perm.sudo.neighbours.ask"), []ui.PickItem{{Label: i18n.T("choice.no")}, {Label: i18n.T("choice.yes")}}) != 1 {
+						continue
+					}
+				}
 				if err := ui.GrantSudo(); err != nil {
 					fmt.Fprintf(w, " %s %s\n", ui.Red("✗"), i18n.T("perm.sudo.failed"))
 				} else {
