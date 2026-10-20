@@ -151,9 +151,9 @@ func reviewAndRemove(in *bufio.Reader, w io.Writer, chosen []uninstall.Package, 
 	}
 	sudo := func(p uninstall.Package) error {
 		return ui.RunSudo(in, w, ui.SudoStep{
-			Action: ui.Safe(p.Name) + " (" + ui.Bytes(p.Size) + ")", Reason: i18n.T("sudo.reason.jdk"),
-			Command: p.Command, Undo: i18n.T("sudo.undo.jdk"),
-		}, ui.SudoOptions{NoSudo: o.noSudo})
+			Action: ui.Safe(p.Name) + " (" + ui.Bytes(p.Size) + ")", Reason: i18n.T("sudo.reason." + p.Provider),
+			Command: p.Command, Undo: i18n.T("sudo.undo." + p.Provider),
+		}, ui.SudoOptions{NoSudo: o.noSudo, Pick: o.pick})
 	}
 	outs := uninstall.Remove(chosen, run, sudo, filepath.Join(state, "history.jsonl"))
 	var ok int

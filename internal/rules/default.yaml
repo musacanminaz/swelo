@@ -17,7 +17,7 @@
 - id: node
   group: build
   kind: artifact
-  names: [node_modules, .next, .nuxt, .output, .svelte-kit, .turbo, .parcel-cache, .expo, dist, coverage]
+  names: [node_modules, .next, .nuxt, .output, .svelte-kit, .turbo, .parcel-cache, .expo, .angular, .docusaurus, dist, coverage]
   markers: [package.json]
   desc:
     en: JavaScript dependencies and build output
@@ -47,7 +47,7 @@
 - id: python
   group: build
   kind: artifact
-  names: [.venv, venv, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache]
+  names: [.venv, venv, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .tox, .nox, .hypothesis]
   markers: []
   desc:
     en: Python virtualenvs and caches
@@ -67,11 +67,11 @@
 - id: gradle-project
   group: build
   kind: artifact
-  names: [.gradle]
+  names: [.gradle, build, .cxx, .externalNativeBuild, .kotlin]
   markers: [build.gradle, build.gradle.kts, settings.gradle, settings.gradle.kts]
   desc:
-    en: Per-project Gradle caches
-    tr: Proje içi Gradle cache'leri
+    en: Gradle build output and caches (Java, Kotlin, Android)
+    tr: Gradle build çıktıları ve cache'leri (Java, Kotlin, Android)
   rebuild: next Gradle build
 
 - id: terraform
@@ -84,6 +84,86 @@
     tr: Terraform provider eklentileri
   rebuild: terraform init
 
+- id: maven
+  group: build
+  kind: artifact
+  names: [target]
+  markers: [pom.xml]
+  desc:
+    en: Maven build output (Java)
+    tr: Maven build çıktıları (Java)
+  rebuild: mvn package
+
+- id: scala
+  group: build
+  kind: artifact
+  names: [target, .bloop, .metals, .bsp]
+  markers: [build.sbt]
+  desc:
+    en: sbt build output and Metals/Bloop caches (Scala)
+    tr: sbt build çıktıları ve Metals/Bloop cache'leri (Scala)
+  rebuild: sbt compile
+
+- id: dotnet
+  group: build
+  kind: artifact
+  names: [bin, obj]
+  markers: ["*.csproj", "*.fsproj", "*.vbproj"]
+  desc:
+    en: .NET build output (C#, F#)
+    tr: .NET build çıktıları (C#, F#)
+  rebuild: dotnet build
+
+- id: swift
+  group: build
+  kind: artifact
+  names: [.build]
+  markers: [Package.swift]
+  desc:
+    en: Swift Package Manager build output
+    tr: Swift Package Manager build çıktıları
+  rebuild: swift build
+
+- id: elixir
+  group: build
+  kind: artifact
+  names: [_build, deps, .elixir_ls]
+  markers: [mix.exs]
+  desc:
+    en: Elixir build output and dependencies
+    tr: Elixir build çıktıları ve bağımlılıkları
+  rebuild: mix deps.get && mix compile
+
+- id: haskell
+  group: build
+  kind: artifact
+  names: [.stack-work, dist-newstyle]
+  markers: [stack.yaml, cabal.project, "*.cabal"]
+  desc:
+    en: Haskell build output (Stack, Cabal)
+    tr: Haskell build çıktıları (Stack, Cabal)
+  rebuild: stack build / cabal build
+
+- id: zig
+  group: build
+  kind: artifact
+  names: [.zig-cache, zig-cache, zig-out]
+  markers: [build.zig]
+  desc:
+    en: Zig build cache and output
+    tr: Zig build cache'i ve çıktıları
+  rebuild: zig build
+
+- id: cmake
+  group: build
+  kind: artifact
+  names: [cmake-build-debug, cmake-build-release, cmake-build-relwithdebinfo]
+  markers: [CMakeLists.txt]
+  desc:
+    en: CMake build folders made by CLion (C, C++)
+    tr: CLion'un oluşturduğu CMake build klasörleri (C, C++)
+  rebuild: cmake --build
+
 # ---------- caches ----------
 - id: package-caches
   group: cache
@@ -93,6 +173,15 @@
     - ~/.npm/_cacache
     - ~/Library/Caches/pip
     - ~/Library/Caches/CocoaPods
+    - ~/Library/Caches/deno
+    - ~/.bun/install/cache
+    - ~/.yarn/berry/cache
+    - ~/.cargo/registry/cache
+    - ~/Library/Caches/composer
+    - ~/.composer/cache
+    - ~/Library/Caches/org.swift.swiftpm
+    - ~/Library/Caches/pypoetry/cache
+    - ~/Library/Caches/pypoetry/artifacts
   desc:
     en: Package manager download caches
     tr: Paket yöneticisi indirme cache'leri
@@ -201,6 +290,17 @@
     en: Docker build cache and images no container uses (volumes untouched)
     tr: Docker build cache ve hiçbir container'ın kullanmadığı image'lar (volume'lara dokunulmaz)
 
+- id: go-build-cache
+  group: tools
+  kind: command
+  requires: go
+  size_cmd: [go, env, GOCACHE]
+  run: [[go, clean, -cache]]
+  desc:
+    en: Go build cache
+    tr: Go build cache'i
+  rebuild: next go build
+
 - id: pnpm-store
   group: tools
   kind: command
@@ -281,6 +381,58 @@
   desc:
     en: iOS simulators whose runtime is no longer installed
     tr: Runtime'ı artık yüklü olmayan iOS simülatörleri
+
+- id: go-modcache
+  group: tools
+  risk: risky
+  kind: command
+  requires: go
+  size_cmd: [go, env, GOMODCACHE]
+  run: [[go, clean, -modcache]]
+  desc:
+    en: Go module cache (every module is downloaded again when needed)
+    tr: Go modül cache'i (her modül gerektiğinde yeniden indirilir)
+
+- id: maven-repo
+  group: tools
+  risk: risky
+  kind: path
+  paths: [~/.m2/repository]
+  running: [maven, "IntelliJ IDEA"]
+  desc:
+    en: Maven local repository (downloaded again on the next build)
+    tr: Maven yerel deposu (sonraki build'de yeniden indirilir)
+
+- id: nuget
+  group: tools
+  risk: risky
+  kind: path
+  paths: [~/.nuget/packages]
+  desc:
+    en: NuGet package cache (.NET)
+    tr: NuGet paket cache'i (.NET)
+
+- id: php-vendor
+  group: build
+  risk: risky
+  kind: artifact
+  names: [vendor]
+  markers: [composer.lock]
+  desc:
+    en: PHP Composer dependencies (composer install restores them from composer.lock)
+    tr: PHP Composer bağımlılıkları (composer install, composer.lock'tan geri kurar)
+  rebuild: composer install
+
+- id: unity
+  group: build
+  risk: risky
+  kind: artifact
+  names: [Library, Temp, obj]
+  markers: [ProjectSettings/ProjectVersion.txt]
+  desc:
+    en: Unity project caches (the next open re-imports assets, which can take long)
+    tr: Unity proje cache'leri (sonraki açılışta asset'ler yeniden içe aktarılır, uzun sürebilir)
+  rebuild: open the project in Unity
 
 # ---------- report only ----------
 - id: big-user-data

@@ -30,6 +30,11 @@ type Refusal struct {
 
 func (r *Refusal) Error() string { return r.Path + ": " + r.Reason }
 
+const recentReason = "project changed in the last"
+
+// IsRecent reports whether a refusal reason is only the recent-project check.
+func IsRecent(reason string) bool { return strings.HasPrefix(reason, recentReason) }
+
 // protectedNames are never deleted wherever they appear.
 var protectedNames = []string{".git", ".ssh", ".gnupg"}
 
@@ -90,7 +95,7 @@ func (g *Guard) Check(path, project string) error {
 			}
 		}
 		if g.RecentDays > 0 && g.recent(project, base) {
-			return refuse(fmt.Sprintf("project changed in the last %d days", g.RecentDays))
+			return refuse(fmt.Sprintf(recentReason+" %d days", g.RecentDays))
 		}
 	}
 	return nil

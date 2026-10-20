@@ -71,7 +71,11 @@ func (e *Env) appPackage(app string, casks map[string]string) Package {
 		p.Command = []string{"brew", "uninstall", "--cask", c}
 		p.Note = "installed by Homebrew cask " + c
 	case !e.ownedByUser(app):
-		p.Note = "owned by root: remove it in Finder or the App Store"
+		// root-owned (App Store, .pkg installers): moved to the Trash as root,
+		// so it can still be put back from Finder (-n: never overwrite what is there)
+		p.Command = append(append([]string{"mv", "-n", app}, left...), filepath.Join(e.Home, ".Trash")+"/")
+		p.Sudo = true
+		p.Note = "owned by root: moved to the Trash with sudo"
 	default:
 		p.Command = append([]string{"/usr/bin/trash", app}, left...)
 		if len(left) > 0 {

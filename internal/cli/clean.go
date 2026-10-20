@@ -14,6 +14,7 @@ import (
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/rules"
+	"github.com/musacanminaz/swelo/internal/safety"
 	"github.com/musacanminaz/swelo/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -104,8 +105,8 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	fmt.Fprintf(w, "   %s %s\n", i18n.T("disk.free"), ui.Bytes(before))
 
 	if o.pick {
-		var ok bool
-		if results, total, ok = pickResults(results); !ok {
+		var ok, recent bool
+		if results, total, recent, ok = pickResults(results, eng.Guard.RecentDays); !ok {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 			return nil
 		}
@@ -114,6 +115,9 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 			return nil
 		}
 		o.risky = true // risky rules in results were ticked by the user
+		if recent {
+			eng.Guard.RecentDays = 0 // the user ticked recently changed projects; other checks still apply
+		}
 	} else if !o.apply {
 		fmt.Fprintf(w, " %s\n\n", ui.Dim(i18n.T("hint.apply")))
 		return nil
@@ -258,9 +262,24 @@ func lastLines(s string, n int) string {
 	return strings.Join(lines, "\n")
 }
 
-// pickResults lets the user tick rules (🟢 ticked, 🟡 not) and returns the
-// ticked results with their total; ok is false if the picker was cancelled.
-func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok bool) {
+// pickResults lets the user tick rules (🟢 ticked, 🟡 and recently changed
+// projects not) and returns the ticked results with their total; recent is
+// true if recently changed projects were ticked, ok false if cancelled.
+func pickResults(results []clean.Result, recentDays int) (chosen []clean.Result, total int64, recent, ok bool) {
+	items, selected, resolve := cleanRows(results, recentDays)
+	pk := ui.NewPicker(i18n.T("pick.clean"), items)
+	copy(pk.Selected, selected)
+	if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
+		return nil, 0, false, false
+	}
+	chosen, total, recent = resolve(pk.Selected)
+	return chosen, total, recent, true
+}
+
+// cleanRows builds the pick list: one row per rule with something to free,
+// then one row per rule for projects skipped only for being recent.
+func cleanRows(results []clean.Result, recentDays int) (items []ui.PickItem, selected []bool,
+	resolve func([]bool) ([]clean.Result, int64, bool)) {
 	var idx []int
 	for _, risk := range []string{rules.Safe, rules.Risky} {
 		for i, r := range results {
@@ -270,7 +289,7 @@ func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok
 			}
 		}
 	}
-	items := make([]ui.PickItem, len(idx))
+	items = make([]ui.PickItem, len(idx))
 	for n, i := range idx {
 		r := results[i]
 		size := ui.Bytes(r.Size)
@@ -279,20 +298,77 @@ func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok
 		}
 		items[n] = ui.PickItem{Group: i18n.T("group." + r.Rule.Risk), Label: fmt.Sprintf("%9s  %s", size, r.Rule.ID), Detail: r.Rule.Description(i18n.Lang())}
 	}
-	pk := ui.NewPicker(i18n.T("pick.clean"), items)
-	for n, i := range idx {
-		pk.Selected[n] = clean.Selected(results[i], false)
-	}
-	if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
-		return nil, 0, false
-	}
-	for n, i := range idx {
-		if pk.Selected[n] {
-			chosen = append(chosen, results[i])
-			total += results[i].Size
+	// one more row per rule for the projects skipped only for being recent
+	recentItems := map[int][]clean.Item{}
+	var recentIdx []int
+	for i, r := range results {
+		if !clean.Selected(r, true) {
+			continue
+		}
+		var size int64
+		var names []string
+		seen := map[string]bool{}
+		for _, it := range r.Skips {
+			if safety.IsRecent(it.Skip) {
+				it.Skip = ""
+				recentItems[i] = append(recentItems[i], it)
+				size += it.Size
+				if !seen[it.Project] { // "repo/ios": a project's own name is often just ios or web
+					seen[it.Project] = true
+					names = append(names, filepath.Join(filepath.Base(filepath.Dir(it.Project)), filepath.Base(it.Project)))
+				}
+			}
+		}
+		if len(names) > 0 {
+			recentIdx = append(recentIdx, i)
+			items = append(items, ui.PickItem{Group: fmt.Sprintf(i18n.T("group.recent"), recentDays),
+				Label:  fmt.Sprintf("%9s  %s", ui.Bytes(size), r.Rule.ID),
+				Detail: fmt.Sprintf(i18n.T("pick.recent"), len(names), ui.Safe(strings.Join(names, ", ")))})
 		}
 	}
-	return chosen, total, true
+	selected = make([]bool, len(items))
+	for n, i := range idx {
+		selected[n] = clean.Selected(results[i], false)
+	}
+	resolve = func(selected []bool) (chosen []clean.Result, total int64, recent bool) {
+		return resolveRows(results, idx, recentIdx, recentItems, selected)
+	}
+	return items, selected, resolve
+}
+
+func resolveRows(results []clean.Result, idx, recentIdx []int, recentItems map[int][]clean.Item, selected []bool) (chosen []clean.Result, total int64, recent bool) {
+	picked := map[int]*clean.Result{}
+	var order []int
+	take := func(i int) *clean.Result {
+		if picked[i] == nil {
+			r := results[i]
+			r.Items, r.Size = nil, 0
+			picked[i] = &r
+			order = append(order, i)
+		}
+		return picked[i]
+	}
+	for n, i := range idx {
+		if selected[n] {
+			r := take(i)
+			r.Items, r.Size = append([]clean.Item(nil), results[i].Items...), results[i].Size
+		}
+	}
+	for n, i := range recentIdx {
+		if selected[len(idx)+n] {
+			r := take(i)
+			for _, it := range recentItems[i] {
+				r.Items = append(r.Items, it)
+				r.Size += it.Size
+			}
+			recent = true
+		}
+	}
+	for _, i := range order {
+		chosen = append(chosen, *picked[i])
+		total += picked[i].Size
+	}
+	return chosen, total, recent
 }
 
 // ask is a yes/no question: a menu when picking, typed y/N otherwise.

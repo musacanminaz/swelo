@@ -200,3 +200,36 @@ func TestParseSize(t *testing.T) {
 		}
 	}
 }
+
+// Folder names shared by several languages go to the rule whose marker is there.
+func TestLanguageMarkers(t *testing.T) {
+	home, _ := filepath.EvalSymlinks(t.TempDir())
+	d := filepath.Join(home, "code")
+	for proj, layout := range map[string][2]string{
+		"java":   {"pom.xml", "target"},
+		"rs":     {"Cargo.toml", "target"},
+		"cs":     {"App.csproj", "obj"},
+		"kt":     {"build.gradle.kts", "build"},
+		"unity":  {"ProjectSettings/ProjectVersion.txt", "Library"},
+		"nomark": {"README.md", "target"},
+		"php":    {"composer.lock", "vendor"},
+	} {
+		file(t, filepath.Join(d, proj, layout[0]), month)
+		dir(t, filepath.Join(d, proj, layout[1]), month)
+	}
+	dir(t, filepath.Join(d, "unity", "ProjectSettings"), month) // made by file() just now
+	all, cfg, err := rules.Load(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Roots = []string{"~/code"}
+	e := New(home, sandboxed(t, all, home), cfg)
+	e.procs, e.cwds = "", nil
+	res := e.Scan()
+	for id, want := range map[string]string{"maven": "java/target", "rust": "rs/target", "dotnet": "cs/obj",
+		"gradle-project": "kt/build", "unity": "unity/Library", "php-vendor": "php/vendor"} {
+		if got := paths(find(res, id).Items); len(got) != 1 || got[want] != "" {
+			t.Errorf("%s items = %v, want %s", id, got, want)
+		}
+	}
+}

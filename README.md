@@ -17,7 +17,9 @@ much space they take, and deletes only what you approve.
 - Run `sudo` without asking (the exact command is always shown first), or send data over the network
 - Delete anything without `--apply` and your confirmation
 
-Run `swelo permissions` to see every permission swelo may use and why.
+Run `swelo permissions` to see every permission swelo may use and why. In the menu, **Permissions**
+grants admin rights for the session (sudo asks for the password once, every sudo step is still shown and
+confirmed, and `sudo -k` runs when swelo quits) and opens the Full Disk Access settings.
 
 ## Commands
 
@@ -56,11 +58,12 @@ What `clean` looks at:
 
 | Risk | Rules |
 |---|---|
-| 🟢 safe (default) | node_modules / .next / dist / … (only next to package.json), Flutter build + .dart_tool, Pods, .venv, Rust target, .terraform, package manager caches, Gradle, Xcode DerivedData, VS Code caches, browser caches (browser closed), old Playwright browsers, closed Playwright MCP profiles, crash reports > 30 days, Docker build cache + unused images, `brew cleanup`, `pnpm store prune`, `uv cache clean` |
-| 🟡 `--risky` | Docker containers stopped > 7 days, Dart pub cache, old Android build-tools, unavailable iOS simulators |
+| 🟢 safe (default) | node_modules / .next / dist / … (only next to package.json), Flutter build + .dart_tool, Pods, .venv / .tox, Rust and Maven target, Gradle build (Java, Kotlin, Android), sbt target (Scala), .NET bin/obj, Swift .build, Elixir _build/deps, Haskell .stack-work, Zig caches, CLion cmake-build-*, .terraform, package manager caches (npm, Yarn, pip, Poetry, CocoaPods, Deno, Bun, Cargo, Composer, SwiftPM), Go build cache, Gradle, Xcode DerivedData, VS Code caches, browser caches (browser closed), old Playwright browsers, closed Playwright MCP profiles, crash reports > 30 days, Docker build cache + unused images, `brew cleanup`, `pnpm store prune`, `uv cache clean` |
+| 🟡 `--risky` | Docker containers stopped > 7 days, Dart pub cache, Go module cache, Maven repository, NuGet cache, PHP vendor (with composer.lock), Unity Library/Temp, old Android build-tools, unavailable iOS simulators |
 | ⚪ report only | WhatsApp / Telegram data, Xcode archives, simulator devices, Downloads, Trash |
 
-Always skipped: git-tracked files, projects changed in the last 7 days, projects where a
+Always skipped: git-tracked files, projects changed in the last 7 days (in the menu they get their
+own unticked rows, so you can choose them; `--recent-days 0` on the command line), projects where a
 process is running (dev server, editor terminal), `.env*`, `*.sql` / `*.dump` / `*.db`,
 `.git`, `~/Documents`, `~/.ssh`, Docker volumes and Docker's disk image.
 Every deletion is logged to `~/.local/state/swelo/history.jsonl`.

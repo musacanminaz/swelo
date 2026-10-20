@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 )
@@ -24,6 +26,7 @@ type SudoStep struct {
 // SudoOptions controls how sudo steps are handled.
 type SudoOptions struct {
 	NoSudo bool                      // skip every sudo step
+	Pick   bool                      // ask with a menu instead of typed y/N
 	Run    func(args []string) error // runs the command; nil = real sudo
 }
 
@@ -48,7 +51,13 @@ func RunSudo(r *bufio.Reader, w io.Writer, s SudoStep, o SudoOptions) error {
 		fmt.Fprintf(w, " %s\n", Dim(i18n.T("sudo.skipped.flag")))
 		return ErrSkipped
 	}
-	if !Confirm(r, w, i18n.T("sudo.ask"), false) {
+	ok := false
+	if o.Pick {
+		ok = Choose(i18n.T("sudo.ask"), []PickItem{{Label: i18n.T("choice.no")}, {Label: i18n.T("choice.yes")}}) == 1
+	} else {
+		ok = Confirm(r, w, i18n.T("sudo.ask"), false)
+	}
+	if !ok {
 		fmt.Fprintf(w, " %s\n", Dim(i18n.T("sudo.skipped")))
 		return ErrSkipped
 	}
@@ -63,8 +72,63 @@ func realSudo(args []string) error {
 	cmd := exec.Command("sudo", append([]string{"--"}, args...)...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	err := cmd.Run()
-	exec.Command("sudo", "-k").Run() // drop cached credentials
+	if !SudoGranted() {
+		exec.Command("sudo", "-k").Run() // drop cached credentials
+	}
 	return err
+}
+
+var session struct {
+	sync.Mutex
+	stop chan struct{}
+}
+
+// GrantSudo lets sudo (not swelo) ask for the password once and keeps the
+// credentials fresh while swelo runs, so later steps do not ask again. Each
+// step is still shown and confirmed on its own. EndSudo drops them.
+func GrantSudo() error {
+	cmd := exec.Command("sudo", "-v")
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	session.Lock()
+	defer session.Unlock()
+	if session.stop == nil {
+		stop := make(chan struct{})
+		session.stop = stop
+		go func() {
+			t := time.NewTicker(time.Minute)
+			defer t.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case <-t.C:
+					exec.Command("sudo", "-n", "-v").Run() // refresh without prompting
+				}
+			}
+		}()
+	}
+	return nil
+}
+
+// SudoGranted reports whether GrantSudo is in effect.
+func SudoGranted() bool {
+	session.Lock()
+	defer session.Unlock()
+	return session.stop != nil
+}
+
+// EndSudo stops the refresh and drops sudo's cached credentials.
+func EndSudo() {
+	session.Lock()
+	if session.stop != nil {
+		close(session.stop)
+		session.stop = nil
+	}
+	session.Unlock()
+	exec.Command("sudo", "-k").Run()
 }
 
 // ShellJoin quotes args the way a shell would need them, for display.

@@ -8,6 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"os"
+	"os/exec"
+	"os/signal"
+
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/ui"
@@ -20,6 +24,17 @@ var menuIDs = []string{"clean", "analyze", "tree", "uninstall", "optimize", "sta
 // the menu comes back.
 func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 	introGate(in, w, true)
+	// a sudo session granted from the menu never outlives swelo
+	defer endSudo()
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sig)
+	go func() {
+		if _, ok := <-sig; ok {
+			endSudo()
+			os.Exit(130)
+		}
+	}()
 	for {
 		menuHeader(w, home)
 		items := make([]ui.PickItem, len(menuIDs))
@@ -47,7 +62,8 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 		case "history":
 			runHistory(w, home, stateDir(), 30)
 		case "permissions":
-			printPermissions(w)
+			permissionsMenu(in, w, home)
+			continue
 		case "lang":
 			if i18n.Lang() == "tr" {
 				i18n.Set("en")
@@ -77,7 +93,80 @@ func menuHeader(w io.Writer, home string) {
 	if perm.FullDiskAccess(home) {
 		fda = ui.Green(i18n.T("menu.fda.yes"))
 	}
+	if ui.SudoGranted() {
+		fda += " · " + ui.Green(i18n.T("menu.sudo.yes"))
+	}
 	fmt.Fprintf(w, "\n %s %s — %s\n", ui.Bold("swelo"), Version, i18n.T("tagline"))
 	fmt.Fprintf(w, " %s %s  %s / %s · %s %s · %s\n\n", i18n.T("disk"), bar, ui.Bytes(total-free), ui.Bytes(total),
 		ui.Bold(ui.Bytes(free)), i18n.T("menu.free"), fda)
+}
+
+func endSudo() {
+	if ui.SudoGranted() {
+		ui.EndSudo()
+	}
+}
+
+// permissionsMenu grants or drops the sudo session, opens the Full Disk
+// Access settings, or explains every permission.
+func permissionsMenu(in *bufio.Reader, w io.Writer, home string) {
+	for {
+		sudoLabel, sudoDesc := i18n.T("perm.menu.sudo"), i18n.T("perm.menu.sudo.desc")
+		if ui.SudoGranted() {
+			sudoLabel, sudoDesc = i18n.T("perm.menu.sudo.end"), i18n.T("perm.menu.sudo.end.desc")
+		}
+		fdaDesc := i18n.T("perm.menu.fda.desc")
+		if perm.FullDiskAccess(home) {
+			fdaDesc = i18n.T("perm.fda.ok")
+		}
+		items := []ui.PickItem{
+			{Label: sudoLabel, Detail: sudoDesc},
+			{Label: i18n.T("perm.menu.fda"), Detail: fdaDesc},
+			{Label: i18n.T("perm.menu.info"), Detail: i18n.T("perm.menu.info.desc")},
+			{Label: i18n.T("perm.menu.back")},
+		}
+		fmt.Fprintln(w)
+		switch ui.Choose(i18n.T("menu.permissions"), items) {
+		case 0:
+			switch {
+			case ui.SudoGranted():
+				ui.EndSudo()
+				fmt.Fprintf(w, " %s %s\n", ui.Green("✓"), i18n.T("perm.sudo.ended"))
+			case !perm.IsAdmin():
+				fmt.Fprintf(w, " %s %s\n", ui.Yellow("!"), i18n.T("perm.sudo.notadmin"))
+			default:
+				fmt.Fprintf(w, "\n%s\n\n", ui.Indent(i18n.T("perm.sudo.explain"), " "))
+				if err := ui.GrantSudo(); err != nil {
+					fmt.Fprintf(w, " %s %s\n", ui.Red("✗"), i18n.T("perm.sudo.failed"))
+				} else {
+					fmt.Fprintf(w, " %s %s\n", ui.Green("✓"), i18n.T("perm.sudo.granted"))
+				}
+			}
+		case 1:
+			fmt.Fprintf(w, "\n%s\n\n", ui.Indent(fmt.Sprintf(i18n.T("perm.fda.steps"), terminalApp()), " "))
+			exec.Command("open", "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles").Run()
+			ui.WaitEnter(in, w, i18n.T("menu.back"))
+		case 2:
+			printPermissions(w)
+			ui.WaitEnter(in, w, i18n.T("menu.back"))
+		default:
+			return
+		}
+	}
+}
+
+// terminalApp names the app that needs Full Disk Access: the terminal swelo runs in.
+func terminalApp() string {
+	switch os.Getenv("TERM_PROGRAM") {
+	case "Apple_Terminal":
+		return "Terminal"
+	case "iTerm.app":
+		return "iTerm"
+	case "vscode":
+		return "Visual Studio Code / Cursor"
+	case "":
+		return i18n.T("perm.fda.yourterm")
+	default:
+		return ui.Safe(os.Getenv("TERM_PROGRAM"))
+	}
 }
