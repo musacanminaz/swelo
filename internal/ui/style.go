@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/sys/unix"
@@ -66,4 +67,24 @@ func Pad(s string, n int) string {
 		return s + " "
 	}
 	return s + strings.Repeat(" ", n-w)
+}
+
+// Safe makes an untrusted string (a file name or path) printable: control and
+// other non-printable runes become \xNN / \uNNNN, so a crafted name cannot move
+// the cursor, recolor the screen or forge a prompt.
+func Safe(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == utf8.RuneError:
+			b.WriteString(`�`)
+		case unicode.IsPrint(r):
+			b.WriteRune(r)
+		case r < 0x100:
+			fmt.Fprintf(&b, `\x%02x`, r)
+		default:
+			fmt.Fprintf(&b, `\u%04x`, r)
+		}
+	}
+	return b.String()
 }

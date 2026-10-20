@@ -62,3 +62,17 @@ func TestPad(t *testing.T) {
 		t.Errorf("Pad with color = %q", got)
 	}
 }
+
+func TestSafe(t *testing.T) {
+	for in, want := range map[string]string{
+		"node_modules":              "node_modules",
+		"Çöp kutusu":                "Çöp kutusu",
+		"evil\x1b[2J\x1b[Hy? [y/N]": `evil\x1b[2J\x1b[Hy? [y/N]`,
+		"line\nbreak":               `line\x0abreak`,
+		"bidi\u202ename":            `bidi\u202ename`,
+	} {
+		if got := Safe(in); got != want {
+			t.Errorf("Safe(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

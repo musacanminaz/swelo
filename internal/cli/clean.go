@@ -115,7 +115,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 			fmt.Fprintf(w, "   %s %s  %s\n", ui.Green("✓"), r.Rule.ID, ui.Dim(lastLines(p, 1)))
 		case err != nil:
 			failed++
-			fmt.Fprintf(w, "   %s %s: %v\n", ui.Red("✗"), short(p, home), err)
+			fmt.Fprintf(w, "   %s %s: %s\n", ui.Red("✗"), short(p, home), ui.Safe(err.Error()))
 		}
 	})
 	after := clean.FreeBytes(home)
@@ -224,14 +224,15 @@ func skipSummary(skips []clean.Item, all bool, home string) string {
 	return fmt.Sprintf("%s %d: %s", i18n.T("skipped"), len(skips), strings.Join(parts, ", "))
 }
 
+// short abbreviates home as ~ and makes the path safe to print.
 func short(p, home string) string {
 	if p == home {
 		return "~"
 	}
 	if strings.HasPrefix(p, home+"/") {
-		return "~" + p[len(home):]
+		p = "~" + p[len(home):]
 	}
-	return p
+	return ui.Safe(p)
 }
 
 func lastLines(s string, n int) string {

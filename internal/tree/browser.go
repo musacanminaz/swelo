@@ -100,12 +100,12 @@ func (b *Browser) trash(n *Node) {
 		fn = func(p string) error { return Trash(p, b.Home) }
 	}
 	if err := fn(n.Path); err != nil {
-		b.msg = ui.Red(err.Error())
+		b.msg = ui.Red(ui.Safe(err.Error()))
 		return
 	}
 	n.Detach()
 	b.Freed += n.Size
-	b.msg = ui.Green(fmt.Sprintf(i18n.T("tree.trashed"), n.Name, ui.Bytes(n.Size)))
+	b.msg = ui.Green(fmt.Sprintf(i18n.T("tree.trashed"), ui.Safe(n.Name), ui.Bytes(n.Size)))
 	if b.cursor >= len(b.cur.Children) && b.cursor > 0 {
 		b.cursor--
 	}
@@ -121,7 +121,7 @@ func (b *Browser) View() string {
 	}
 	for i := b.top; i < end; i++ {
 		c := b.cur.Children[i]
-		name := c.Name
+		name := ui.Safe(c.Name)
 		if c.Dir {
 			name += "/"
 		}
@@ -168,8 +168,8 @@ func indexOf(list []*Node, n *Node) int {
 }
 
 func short(p, home string) string {
-	if strings.HasPrefix(p, home) {
-		return "~" + p[len(home):]
+	if p == home || strings.HasPrefix(p, home+"/") {
+		p = "~" + p[len(home):]
 	}
-	return p
+	return ui.Safe(p)
 }
