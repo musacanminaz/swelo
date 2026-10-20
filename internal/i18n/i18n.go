@@ -72,7 +72,7 @@ var msgs = map[string][2]string{
 	"never.1":     {"Touch your source code, git-tracked files or documents", "Kaynak kodunuza, git'te takip edilen dosyalara, belgelerinize dokunmaz"},
 	"never.2":     {"Delete Docker volumes, databases or browser profiles", "Docker volume'larını, veritabanlarını, tarayıcı profillerini silmez"},
 	"never.3":     {"Touch projects you changed in the last 7 days", "Son 7 günde değiştirdiğiniz projelere dokunmaz"},
-	"never.4":     {"Run sudo without asking, or send any data over the network", "Sizden habersiz sudo çalıştırmaz, internete veri göndermez"},
+	"never.4":     {"Run sudo without asking, or connect to the network at all", "Sizden habersiz sudo çalıştırmaz, hiçbir şekilde ağa bağlanmaz"},
 	"never.5":     {"Delete anything without --apply and your confirmation", "--apply ve onayınız olmadan hiçbir şey silmez"},
 
 	"perm.title":      {"Permissions", "Yetki durumu"},
@@ -126,8 +126,8 @@ var msgs = map[string][2]string{
 			"gösterir, sonra [e/H] diye sorar. --yes sudo adımlarını onaylamaz; --no-sudo hepsini atlar.",
 	},
 	"permdoc.net": {
-		"No telemetry. The network is used only by `swelo update` to check for a new release.",
-		"Telemetri yok. Ağ sadece `swelo update` ile yeni sürüm kontrolünde kullanılır.",
+		"No telemetry and no network access at all. Update with `brew upgrade swelo`.",
+		"Telemetri yok, hiçbir ağ bağlantısı yok. Güncellemek için: brew upgrade swelo",
 	},
 	"permdoc.files": {"Files swelo writes", "swelo'nun yazdığı dosyalar"},
 
