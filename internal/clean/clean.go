@@ -520,6 +520,9 @@ func processCwds() []string {
 	return cwds
 }
 
+// Busy reports whether a running process has its working directory inside dir.
+func (e *Engine) Busy(dir string) bool { return e.busy(dir) }
+
 // busy reports whether a process works inside dir.
 func (e *Engine) busy(dir string) bool {
 	for _, c := range e.cwds {

@@ -4,6 +4,8 @@ import "strings"
 
 // reasonsTR translates skip reasons produced by safety and clean.
 var reasonsTR = map[string]string{
+	"Time Machine is not set up":                          "Time Machine kurulu değil",
+	"brew not installed":                                  "brew kurulu değil",
 	"moves the app and its leftovers to the Trash":        "uygulamayı ve artıklarını Çöp'e taşır",
 	"moves the app to the Trash":                          "uygulamayı Çöp'e taşır",
 	"owned by root: remove it in Finder or the App Store": "root'a ait: Finder'dan veya App Store'dan kaldırın",

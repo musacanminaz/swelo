@@ -47,5 +47,9 @@ Formula/swelo.rb after tagging.
 - [x] JDKs installed by a Homebrew cask are removed with `brew uninstall --cask` (not rm) and listed once
 - [x] Apps: /Applications + ~/Applications with ~/Library leftovers by bundle id (Containers/Group Containers only with Full Disk Access; protected paths such as Docker's disk image never included); moved to the Trash; cask apps via `brew uninstall --cask`; running apps, root-owned apps and Apple apps not removable
 ## Phase 5 — optimize, status, history
+- [x] `swelo optimize` (dry run; --apply): Time Machine sticky exclusions for regenerable folders (skipped when TM is not set up), `git gc` + `worktree prune` on repos with .git ≥ 200 MB (locked/busy repos skipped, repo hooks/fsmonitor disabled), `brew autoremove`
+- Dropped from the plan after checking: Spotlight `.metadata_never_index` (not honored in subfolders on current macOS), Docker.raw compaction (no verified method for current Docker Desktop — `analyze` reports allocated vs max instead)
+- [ ] `swelo status`: disk, Docker.raw, last cleanups, 30-day free-space trend
+- [ ] `swelo history`
 ## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
 ## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)
