@@ -52,5 +52,12 @@ Formula/swelo.rb after tagging.
 - [x] `swelo status`: disk (colored at 80/90%), Docker.raw, free-space trend from hourly snapshots (shown once ≥ 1 day old), cleanups per day
 - [x] `swelo history [-n N]`: every deletion/uninstall with time, size, rule, path
 - [x] optimize hardening: repos with command-running config keys or another owner are skipped; TM exclusions only for guard-approved items
-## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
-## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)
+## Phase 6 — release polish
+- [x] SECURITY.md (private GitHub advisories enabled); docs corrected: swelo makes no network connections
+- [x] v0.2.0 released (all commands); tap bumped; `brew upgrade`, `brew test`, `brew audit --strict --online` pass
+- [ ] Tap auto-bump on release — needs a fine-grained token with write access to musacanminaz/homebrew-tap stored as a repo secret (owner decision); until then bump url + sha256 by hand
+- [ ] README screenshot/GIF (needs a recording on a real terminal)
+## Phase 7 — homebrew-core
+Waiting on notability: ≥75 stars or ≥30 forks/watchers, and the repo older than 30 days (eligible from 2026-11-19).
+Status on 2026-10-20: 0 stars, 0 forks, 0 watchers, created 2026-10-20.
+When eligible: `brew create`-style formula (the tap formula already builds from source with a test), `brew audit --new --strict --online swelo`, PR to Homebrew/homebrew-core.
