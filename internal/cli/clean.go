@@ -11,6 +11,7 @@ import (
 
 	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/i18n"
+	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/rules"
 	"github.com/musacanminaz/swelo/internal/ui"
 	"github.com/spf13/cobra"
@@ -56,6 +57,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 		}
 	}
 	eng := clean.New(home, rs, cfg)
+	eng.FDA = perm.FullDiskAccess(home)
 
 	del := i18n.T("plan.delete.dry")
 	if o.apply {

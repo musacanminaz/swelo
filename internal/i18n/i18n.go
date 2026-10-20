@@ -16,6 +16,9 @@ func Set(l string) {
 	}
 }
 
+// Has reports whether key has a message.
+func Has(key string) bool { _, ok := msgs[key]; return ok }
+
 // Lang returns the active language.
 func Lang() string { return lang }
 
@@ -172,4 +175,40 @@ var msgs = map[string][2]string{
 	"done.freed":        {"Freed:", "Açılan yer:"},
 	"done.failed":       {"%d items could not be deleted (see above).", "%d öğe silinemedi (yukarıya bakın)."},
 	"done.log":          {"Every deleted path is logged in", "Silinen her yol şuraya yazıldı:"},
+
+	"plan.read.analyze": {"file and folder sizes only — never file contents", "sadece dosya ve klasör boyutları — dosya içerikleri asla okunmaz"},
+	"plan.delete.none":  {"nothing — analyze never deletes", "hiçbir şey — analyze asla silmez"},
+	"plan.perm.analyze": {"normal user; folders macOS protects (Mail, Messages, app containers, Trash) are skipped — add --full to include them", "normal kullanıcı; macOS'un koruduğu klasörler (Mail, Messages, uygulama container'ları, Çöp) atlanır — dahil etmek için --full"},
+	"plan.perm.full":    {"Full Disk Access (granted): protected folders are measured too", "Full Disk Access (açık): korumalı klasörler de ölçülür"},
+	"plan.time.analyze": {"20–90 s", "20–90 sn"},
+	"analyze.nofda":     {"--full needs Full Disk Access for your terminal (see `swelo permissions`); protected folders will be skipped.", "--full için terminalinize Full Disk Access gerekir (bkz. swelo permissions); korumalı klasörler atlanacak."},
+	"disk":              {"Disk:", "Disk:"},
+	"col.category":      {"Home folder", "Ev klasörü"},
+	"col.size":          {"size", "boyut"},
+	"col.freeable":      {"clean can free", "clean ile açılır"},
+	"col.total":         {"total", "toplam"},
+	"cat.projects":      {"Projects", "Projeler"},
+	"cat.xcode":         {"Xcode & simulators", "Xcode ve simülatörler"},
+	"cat.android":       {"Android SDK", "Android SDK"},
+	"cat.pkg-caches":    {"Package manager caches", "Paket yöneticisi cache'leri"},
+	"cat.runtimes":      {"Language runtimes (nvm, pyenv…)", "Dil sürümleri (nvm, pyenv…)"},
+	"cat.ai-models":     {"AI models & apps", "AI modelleri ve uygulamaları"},
+	"cat.browsers":      {"Browsers", "Tarayıcılar"},
+	"cat.editors":       {"Editors (VS Code, Cursor, JetBrains)", "Editörler (VS Code, Cursor, JetBrains)"},
+	"cat.messaging":     {"Messaging (WhatsApp, Slack…)", "Mesajlaşma (WhatsApp, Slack…)"},
+	"cat.docker":        {"Docker", "Docker"},
+	"cat.app-caches":    {"Other app caches", "Diğer uygulama cache'leri"},
+	"cat.library":       {"Other ~/Library", "Diğer ~/Library"},
+	"cat.downloads":     {"Downloads", "İndirilenler"},
+	"cat.trash":         {"Trash", "Çöp Kutusu"},
+	"cat.media":         {"Documents & media", "Belgeler ve medya"},
+	"cat.other":         {"Everything else in ~", "~ içindeki diğer her şey"},
+	"analyze.docker":    {"Docker disk image uses %s on disk (can grow to %s)", "Docker disk dosyası diskte %s kaplıyor (en fazla %s'a büyüyebilir)"},
+	"analyze.skipped":   {"%d protected folders were not read (add --full with Full Disk Access to include them).", "%d korumalı klasör okunmadı (dahil etmek için Full Disk Access ile --full)."},
+	"analyze.bigfiles":  {"Files over 1 GB", "1 GB'tan büyük dosyalar"},
+	"analyze.projects":  {"Projects with the most regenerable data", "En çok yeniden oluşturulabilir verisi olan projeler"},
+	"analyze.daysago":   {"changed %d days ago", "%d gün önce değişti"},
+	"analyze.today":     {"changed today", "bugün değişti"},
+	"more.top":          {"… %d more (--top N shows more)", "… %d öğe daha (--top N ile daha fazlası)"},
+	"analyze.next":      {"Nothing was deleted. Next: `swelo clean` shows exactly what would be removed.", "Hiçbir şey silinmedi. Sonraki adım: `swelo clean` neyin silineceğini tam olarak gösterir."},
 }

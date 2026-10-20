@@ -30,11 +30,13 @@ Tap: https://github.com/musacanminaz/homebrew-tap (`brew install musacanminaz/ta
 Formula/swelo.rb after tagging.
 
 ## Phase 3 — analyze
-- [ ] Category summary (projects, package caches, SDKs, Docker.raw, browsers, messaging, Downloads, Trash) with "clean can free" column
-- [ ] Largest single files (> 1 GB)
-- [ ] Projects list: last change, artifact size, untouched > 90 days
+- [x] Category summary in one parallel walk of ~ (≈30 s here) with "clean can free" column; Docker.raw allocated vs max
+- [x] Largest single files (> 1 GB)
+- [x] Projects list: regenerable size, last change (> 90 days highlighted)
+- [x] macOS-protected folders (Containers, Group Containers, Mail, Messages, Trash…) are never read without --full + Full Disk Access, in analyze and clean, so no privacy dialogs pop up
+- [x] Test: every i18n key used in code exists
 - [ ] TUI tree (ncdu-like), delete = move to Trash
-- [ ] `--full` uses Full Disk Access folders
+- [x] `--full` uses Full Disk Access folders
 
 ## Phase 4 — uninstall
 ## Phase 5 — optimize, status, history

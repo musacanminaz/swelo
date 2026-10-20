@@ -42,7 +42,7 @@ func Execute() error {
 	}
 	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
 	root.Flags().BoolVar(&introFlag, "intro", false, "show the first-run introduction again before the next scan")
-	root.AddCommand(permissionsCmd(), cleanCmd())
+	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd())
 	return root.Execute()
 }
 
@@ -78,7 +78,7 @@ func welcome(w io.Writer) {
 	cmds := []struct {
 		name  string
 		ready bool
-	}{{"analyze", false}, {"clean", true}, {"optimize", false}, {"uninstall", false}, {"status", false}, {"permissions", true}}
+	}{{"analyze", true}, {"clean", true}, {"optimize", false}, {"uninstall", false}, {"status", false}, {"permissions", true}}
 	for _, c := range cmds {
 		soon := ""
 		if !c.ready {

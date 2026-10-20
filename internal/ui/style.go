@@ -3,7 +3,9 @@ package ui
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 var color = func() bool {
@@ -45,4 +47,16 @@ func Bytes(n int64) string {
 		return fmt.Sprintf("%.0f KB", float64(n)/k)
 	}
 	return fmt.Sprintf("%d B", n)
+}
+
+var ansiRe = regexp.MustCompile("\x1b\\[[0-9;]*m")
+
+// Pad left-aligns s to n display columns, ignoring color codes and counting
+// runes so Turkish letters line up.
+func Pad(s string, n int) string {
+	w := utf8.RuneCountInString(ansiRe.ReplaceAllString(s, ""))
+	if w >= n {
+		return s + " "
+	}
+	return s + strings.Repeat(" ", n-w)
 }

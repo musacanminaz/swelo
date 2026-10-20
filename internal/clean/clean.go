@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/rules"
 	"github.com/musacanminaz/swelo/internal/safety"
 )
@@ -41,6 +42,7 @@ type Result struct {
 
 // Engine scans and applies rules.
 type Engine struct {
+	FDA      bool // Full Disk Access: TCC-protected folders may be read
 	Home     string
 	Cfg      rules.Config
 	Guard    *safety.Guard
@@ -245,7 +247,11 @@ func hasMarker(dir string, markers []string) bool {
 func (e *Engine) pathItems(r rules.Rule) []Item {
 	var items []Item
 	for _, p := range r.Paths {
-		matches, _ := filepath.Glob(rules.Expand(p, e.Home))
+		pattern := rules.Expand(p, e.Home)
+		if !e.FDA && e.tccProtected(pattern) {
+			continue // reading it could pop up a macOS privacy dialog
+		}
+		matches, _ := filepath.Glob(pattern)
 		for _, m := range matches {
 			if !r.Children {
 				items = append(items, Item{Path: m})
@@ -567,3 +573,12 @@ func ParseSize(s string) int64 {
 }
 
 var sizeRe = regexp.MustCompile(`([0-9]+(?:\.[0-9]+)?)\s*([kKMGT]?)i?B`)
+
+func (e *Engine) tccProtected(p string) bool {
+	for _, d := range perm.ProtectedDirs(e.Home) {
+		if p == d || strings.HasPrefix(p, d+"/") {
+			return true
+		}
+	}
+	return false
+}

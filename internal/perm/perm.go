@@ -32,3 +32,18 @@ func IsAdmin() bool {
 	}
 	return false
 }
+
+// ProtectedDirs are folders macOS guards with privacy prompts (TCC); reading them
+// without Full Disk Access can trigger a dialog, so they are read only with --full.
+func ProtectedDirs(home string) []string {
+	lib := filepath.Join(home, "Library")
+	return []string{
+		filepath.Join(lib, "Containers"), filepath.Join(lib, "Group Containers"),
+		filepath.Join(lib, "Mail"), filepath.Join(lib, "Messages"), filepath.Join(lib, "Safari"),
+		filepath.Join(lib, "Calendars"), filepath.Join(lib, "Cookies"), filepath.Join(lib, "HomeKit"),
+		filepath.Join(lib, "Application Support", "AddressBook"), filepath.Join(lib, "Application Support", "com.apple.TCC"),
+		filepath.Join(lib, "Application Support", "CallHistoryDB"), filepath.Join(lib, "Application Support", "MobileSync"),
+		filepath.Join(lib, "Biome"), filepath.Join(lib, "Suggestions"), filepath.Join(lib, "Metadata", "CoreSpotlight"),
+		filepath.Join(home, ".Trash"), filepath.Join(home, "Pictures", "Photos Library.photoslibrary"),
+	}
+}

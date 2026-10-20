@@ -53,3 +53,12 @@ func TestSudoStep(t *testing.T) {
 		t.Fatalf("yes must run once, err=%v ran=%v", err, ran)
 	}
 }
+
+func TestPad(t *testing.T) {
+	if got := Pad("Çöp", 5); got != "Çöp  " {
+		t.Errorf("Pad = %q", got)
+	}
+	if got := Pad("\x1b[1mab\x1b[0m", 4); got != "\x1b[1mab\x1b[0m  " {
+		t.Errorf("Pad with color = %q", got)
+	}
+}
