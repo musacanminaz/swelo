@@ -56,6 +56,7 @@ Formula/swelo.rb after tagging.
 - [x] SECURITY.md (private GitHub advisories enabled); docs corrected: swelo makes no network connections
 - [x] v0.2.0 released (all commands); tap bumped; `brew upgrade`, `brew test`, `brew audit --strict --online` pass
 - [x] v0.3.0 released: interactive menu (`swelo`), `--pick` for clean/optimize, live scan progress, whole-home project scan (`~/*`); tap bumped, brew test + audit pass
+- [x] v0.4.0 / v0.4.1 released: admin rights from the menu (isolated child processes, terminal neighbours listed), more language rules, opt-in recent projects, measured docker/simulator rules; release workflow moved to Linux runners
 - [ ] Tap auto-bump on release — needs a fine-grained token with write access to musacanminaz/homebrew-tap stored as a repo secret (owner decision); until then bump url + sha256 by hand
 - [ ] README screenshot/GIF (needs a recording on a real terminal)
 ## Phase 7 — homebrew-core
