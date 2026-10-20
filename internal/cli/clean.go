@@ -185,7 +185,7 @@ func printResult(w io.Writer, r clean.Result, top int, o cleanOpts, home string)
 		count = fmt.Sprintf(" · %d", len(r.Items))
 	}
 	size := ui.Bytes(r.Size)
-	if r.Rule.Kind == "command" && r.Size == 0 && len(r.Rule.SizeCmd) == 0 && len(r.Rule.SizeTextCmd) == 0 {
+	if !sizeKnown(r) {
 		size = "" // size unknown until the command runs
 	}
 	fmt.Fprintf(w, "\n %s %s%s — %s  %s%s\n", mark, ui.Bold(r.Rule.ID), tag, r.Rule.Description(i18n.Lang()),
@@ -264,7 +264,8 @@ func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok
 	var idx []int
 	for _, risk := range []string{rules.Safe, rules.Risky} {
 		for i, r := range results {
-			if r.Rule.Risk == risk && clean.Selected(r, true) && (len(r.Items) > 0 || r.Rule.Kind == "command" && r.Note == "") {
+			command := r.Rule.Kind == "command" && r.Note == "" && (r.Size > 0 || !sizeKnown(r)) // measured 0 B: nothing to free
+			if r.Rule.Risk == risk && clean.Selected(r, true) && (len(r.Items) > 0 || command) {
 				idx = append(idx, i)
 			}
 		}
@@ -273,7 +274,7 @@ func pickResults(results []clean.Result) (chosen []clean.Result, total int64, ok
 	for n, i := range idx {
 		r := results[i]
 		size := ui.Bytes(r.Size)
-		if r.Rule.Kind == "command" && r.Size == 0 {
+		if !sizeKnown(r) {
 			size = "?"
 		}
 		items[n] = ui.PickItem{Group: i18n.T("group." + r.Rule.Risk), Label: fmt.Sprintf("%9s  %s", size, r.Rule.ID), Detail: r.Rule.Description(i18n.Lang())}
@@ -301,4 +302,9 @@ func ask(in *bufio.Reader, w io.Writer, q string, pick bool) bool {
 	}
 	fmt.Fprintln(w)
 	return ui.Choose(q, []ui.PickItem{{Label: i18n.T("choice.no")}, {Label: i18n.T("choice.yes")}}) == 1
+}
+
+// sizeKnown: false for a command rule that cannot say what it would free.
+func sizeKnown(r clean.Result) bool {
+	return r.Rule.Kind != "command" || r.Size > 0 || len(r.Rule.SizeCmd) > 0 || len(r.Rule.SizeTextCmd) > 0
 }

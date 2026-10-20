@@ -190,8 +190,10 @@
   kind: command
   requires: docker
   check: [docker, info]
-  show: [docker, system, df]
-  size_text_cmd: [docker, system, df, --format, '{{if eq .Type "Build Cache"}}{{.Reclaimable}}{{end}}']
+  show: [sh, -c, "docker images --format '{{.Containers}}|{{.Repository}}:{{.Tag}}|{{.Size}}' | awk -F'|' '$1==\"0\"{print $2\"  \"$3}'; docker system df --format '{{if eq .Type \"Build Cache\"}}build cache  {{.Reclaimable}}{{end}}' | grep ."]
+  # build cache + images no container uses (what the two prunes remove); Docker's
+  # own "reclaimable" counts images of stopped containers too, so it is not used
+  size_text_cmd: [sh, -c, "docker system df --format '{{if eq .Type \"Build Cache\"}}{{.Reclaimable}}{{end}}'; docker images --format '{{.Containers}} {{.Size}}' | awk '$1==\"0\"{print $2}'"]
   run:
     - [docker, builder, prune, -af]
     - [docker, image, prune, -af]
@@ -236,8 +238,11 @@
   kind: command
   requires: docker
   check: [docker, info]
-  show: [docker, ps, -a, --filter, status=exited, --format, "{{.Names}}\t{{.Status}}"]
-  run: [[docker, container, prune, -f, --filter, until=168h]]
+  # stopped more than 7 days ago, read from the status ("Exited (0) 13 days ago");
+  # `container prune --filter until` would go by creation date instead
+  show: [sh, -c, "docker ps -a --filter status=exited --format '{{.ID}}|{{.Names}}|{{.Status}}|{{.Size}}' | awk -F'|' '{split($3,w,\" \")} w[4]~/^(week|month|year)/ || (w[4]==\"days\" && w[3]>=7) {print $2\"\\t\"$3}'"]
+  size_text_cmd: [sh, -c, "docker ps -a --filter status=exited --format '{{.ID}}|{{.Names}}|{{.Status}}|{{.Size}}' | awk -F'|' '{split($3,w,\" \")} w[4]~/^(week|month|year)/ || (w[4]==\"days\" && w[3]>=7) {print substr($4,1,index($4\" \",\" \")-1)}'"]
+  run: [[sh, -c, "docker ps -a --filter status=exited --format '{{.ID}}|{{.Names}}|{{.Status}}|{{.Size}}' | awk -F'|' '{split($3,w,\" \")} w[4]~/^(week|month|year)/ || (w[4]==\"days\" && w[3]>=7) {print $1}' | xargs docker rm"]]
   desc:
     en: Docker containers stopped for more than 7 days (frees their images on the next run)
     tr: 7 günden uzun süredir durmuş Docker container'ları (image'ları sonraki çalışmada silinebilir)
@@ -270,6 +275,8 @@
   risk: risky
   kind: command
   requires: xcrun
+  show: [sh, -c, "xcrun simctl list devices unavailable | grep -E '[0-9A-F]{8}-' || true"]
+  size_text_cmd: [sh, -c, "xcrun simctl list devices unavailable | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | while read u; do du -sk \"$HOME/Library/Developer/CoreSimulator/Devices/$u\" 2>/dev/null; done | awk '{s+=$1} END{print s+0 \"kB\"}'"]
   run: [[xcrun, simctl, delete, unavailable]]
   desc:
     en: iOS simulators whose runtime is no longer installed

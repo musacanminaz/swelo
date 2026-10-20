@@ -408,7 +408,9 @@ func (e *Engine) command(res *Result) {
 	}
 	if len(r.SizeTextCmd) > 0 {
 		if out, err := run(r.SizeTextCmd, 30*time.Second); err == nil {
-			res.Size = ParseSize(out)
+			for _, m := range sizeRe.FindAllString(out, -1) { // one size per line, summed
+				res.Size += ParseSize(m)
+			}
 		}
 	}
 	if len(r.SizeCmd) > 0 {
