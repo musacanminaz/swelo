@@ -3,6 +3,7 @@ package ui
 import (
 	"bufio"
 	"bytes"
+	tea "github.com/charmbracelet/bubbletea"
 	"strings"
 	"testing"
 
@@ -74,5 +75,24 @@ func TestSafe(t *testing.T) {
 		if got := Safe(in); got != want {
 			t.Errorf("Safe(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestPicker(t *testing.T) {
+	i18n.Set("en")
+	p := NewPicker("t", []PickItem{{"g", "a", ""}, {"g", "b", ""}, {"h", "c", ""}})
+	press := func(k tea.KeyMsg) { p.Update(k) }
+	press(tea.KeyMsg{Type: tea.KeySpace, Runes: []rune(" ")})
+	press(tea.KeyMsg{Type: tea.KeyDown})
+	press(tea.KeyMsg{Type: tea.KeyDown})
+	press(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
+	press(tea.KeyMsg{Type: tea.KeyEnter})
+	if !p.Selected[0] || p.Selected[1] || !p.Selected[2] || p.Cancelled {
+		t.Fatalf("selected = %v cancelled = %v", p.Selected, p.Cancelled)
+	}
+	q := NewPicker("t", []PickItem{{"g", "a", ""}})
+	q.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	if !q.Cancelled {
+		t.Fatal("q must cancel")
 	}
 }

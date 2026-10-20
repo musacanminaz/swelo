@@ -84,7 +84,8 @@ var Providers = []Provider{
 	{"ollama", ollamaModels},
 }
 
-// List runs every provider whose tool is present.
+// List runs every provider whose tool is present. A cask that is also listed
+// as a JDK is shown once, as the JDK.
 func List(e *Env, only []string) []Package {
 	var all []Package
 	for _, p := range Providers {
@@ -93,7 +94,19 @@ func List(e *Env, only []string) []Package {
 		}
 		all = append(all, p.List(e)...)
 	}
-	return all
+	viaJDK := map[string]bool{}
+	for _, p := range all {
+		if p.Provider == "jdk" && len(p.Command) == 4 && p.Command[0] == "brew" {
+			viaJDK["cask:"+p.Command[3]] = true
+		}
+	}
+	out := all[:0]
+	for _, p := range all {
+		if !viaJDK[p.ID] {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func contains(list []string, s string) bool {
@@ -329,17 +342,46 @@ func androidSDK(e *Env) []Package {
 
 func jdks(e *Env) []Package {
 	dir := e.JDKDir
-	var out []Package
 	if dir == "" {
 		return nil
 	}
+	casks := map[string]bool{}
+	if e.Look("brew") {
+		list, _ := e.Run("brew", "list", "--cask")
+		for _, c := range strings.Fields(list) {
+			casks[c] = true
+		}
+	}
+	var out []Package
 	for _, j := range subdirs(dir) {
 		p := filepath.Join(dir, j)
-		out = append(out, Package{Provider: "jdk", ID: "jdk:" + j, Name: "JDK " + strings.TrimSuffix(j, ".jdk"),
+		pkg := Package{Provider: "jdk", ID: "jdk:" + j, Name: "JDK " + strings.TrimSuffix(j, ".jdk"),
 			Size: clean.DirSize(p), Installed: mtime(p), Sudo: true, Command: []string{"rm", "-rf", p},
-			Note: "root-owned; if installed with Homebrew, uninstall the cask instead"})
+			Note: "root-owned; if installed with Homebrew, uninstall the cask instead"}
+		if c := jdkCask(j, casks); c != "" {
+			// removing a cask-installed JDK by hand would leave Homebrew out of sync
+			pkg.Sudo, pkg.Command = false, []string{"brew", "uninstall", "--cask", c}
+			pkg.Note = "installed by Homebrew cask " + c + ""
+		}
+		out = append(out, pkg)
 	}
 	return out
+}
+
+// jdkCask maps "zulu-17.jdk" / "temurin-21.jdk" to an installed cask such as
+// "zulu@17", "temurin@21", "zulu17" or "temurin".
+func jdkCask(dir string, casks map[string]bool) string {
+	name := strings.TrimSuffix(dir, ".jdk")
+	vendor, ver, _ := strings.Cut(name, "-")
+	if i := strings.IndexAny(ver, ".+"); i > 0 {
+		ver = ver[:i]
+	}
+	for _, c := range []string{vendor + "@" + ver, vendor + ver, vendor} {
+		if casks[c] {
+			return c
+		}
+	}
+	return ""
 }
 
 func npmGlobals(e *Env) []Package {

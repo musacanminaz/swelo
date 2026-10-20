@@ -43,7 +43,8 @@ Formula/swelo.rb after tagging.
 - [x] Providers (list, read-only): simulator runtimes (real last-used date), Android SDK (sdkmanager ids), Homebrew leaves + casks, nvm Node, pyenv Python, rustup, JDKs (sudo), global npm, Docker images (container use), VS Code/Cursor extensions, Ollama
 - [x] "Pinned by" from .nvmrc / .node-version / .python-version / .tool-versions in project roots; nvm/rustup defaults flagged
 - [x] `swelo uninstall [--only …]` listing; provider tests with a fake Env (no real commands)
-- [ ] Interactive multi-select, confirmation showing every exact command, run (sudo via ui.RunSudo), log
+- [x] `--pick` (bubbletea multi-select) and `--remove <id,...>`; review lists every exact command + warnings (pinned by projects, defaults, containers), one confirmation, sudo steps asked separately via ui.RunSudo (`--yes` never approves them, `--no-sudo` skips), commands run attached to the terminal, every attempt logged
+- [x] JDKs installed by a Homebrew cask are removed with `brew uninstall --cask` (not rm) and listed once
 - [ ] Apps tab: /Applications + leftovers by bundle id
 ## Phase 5 — optimize, status, history
 ## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)

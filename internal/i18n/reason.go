@@ -30,6 +30,7 @@ var reasonPrefixesTR = [][2]string{
 	{"app is running ", "uygulama açık "},
 	{"in use ", "kullanımda "},
 	{"inside ", "içinde: "},
+	{"installed by Homebrew cask ", "Homebrew cask'ı ile kuruldu: "},
 	{"user data file ", "kullanıcı verisi "},
 }
 

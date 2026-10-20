@@ -246,4 +246,21 @@ var msgs = map[string][2]string{
 	"pkg.usedby":            {"pinned by %s (%d projects)", "%s tarafından isteniyor (%d proje)"},
 	"today":                 {"today", "bugün"},
 	"days.ago":              {"%d days ago", "%d gün önce"},
+
+	"pick.count":         {"%d selected", "%d seçili"},
+	"pick.help":          {"↑↓ move · space select · enter continue · q cancel", "↑↓ gez · boşluk seç · enter devam · q iptal"},
+	"pick.title":         {"Select what to uninstall", "Kaldırılacakları seçin"},
+	"uninstall.review":   {"These commands will run, one by one:", "Şu komutlar sırayla çalışacak:"},
+	"uninstall.warn":     {"⚠ %s", "⚠ %s"},
+	"uninstall.confirm":  {"Uninstall %d items (%s)?", "%d öğe kaldırılsın mı (%s)?"},
+	"uninstall.sudonote": {"(sudo — asked separately with the full command)", "(sudo — tam komutla ayrıca sorulur)"},
+	"uninstall.done":     {"Removed %d of %d (%s).", "%d / %d kaldırıldı (%s)."},
+	"uninstall.none":     {"Nothing selected.", "Hiçbir şey seçilmedi."},
+	"uninstall.unknown":  {"unknown id: %s (run `swelo uninstall` to see ids)", "bilinmeyen id: %s (id'leri görmek için: swelo uninstall)"},
+	"uninstall.needtty":  {"--pick needs an interactive terminal; use --remove <id,...> in scripts", "--pick etkileşimli terminal ister; script'lerde --remove <id,...> kullanın"},
+	"uninstall.next2":    {"To remove: swelo uninstall --pick (choose interactively) or --remove <id,...>", "Kaldırmak için: swelo uninstall --pick (interaktif seçim) veya --remove <id,...>"},
+
+	"plan.delete.uninstall.sel": {"only what you select, after you review every command and confirm", "sadece seçtikleriniz; her komutu görüp onayladıktan sonra"},
+	"sudo.reason.jdk":           {"JDKs in /Library/Java are owned by root", "/Library/Java altındaki JDK'lar root'a ait"},
+	"sudo.undo.jdk":             {"reinstall the JDK (e.g. brew install --cask zulu@17)", "JDK'yı yeniden kurun (ör. brew install --cask zulu@17)"},
 }

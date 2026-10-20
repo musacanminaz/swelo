@@ -27,7 +27,7 @@ Run `swelo permissions` to see every permission swelo may use and why.
 | `swelo permissions` | Every permission (Full Disk Access, sudo) explained | ✅ |
 | `swelo clean` | Clean regenerable files; dry run unless `--apply` | ✅ |
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
-| `swelo uninstall` | Lists developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; removal coming next | 🚧 |
+| `swelo uninstall` | Lists developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <id>` uninstalls with each tool's own command after showing it | ✅ |
 | `swelo optimize` | Spotlight / Time Machine exclusions, Docker disk, git gc | planned |
 | `swelo status` | Disk status and history | planned |
 

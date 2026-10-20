@@ -33,7 +33,7 @@ var ErrSkipped = errors.New("sudo step skipped")
 // RunSudo shows the step, asks [y/N], and runs it. Afterwards the sudo
 // timestamp is invalidated so no root session stays open.
 func RunSudo(r *bufio.Reader, w io.Writer, s SudoStep, o SudoOptions) error {
-	cmdline := "sudo " + shellJoin(s.Command)
+	cmdline := "sudo " + ShellJoin(s.Command)
 	fmt.Fprintf(w, "\n %s %s\n\n", Yellow("⚠"), Bold(i18n.T("sudo.title")))
 	fmt.Fprintf(w, "   %-12s %s\n", i18n.T("sudo.action"), s.Action)
 	fmt.Fprintf(w, "   %-12s %s\n", i18n.T("sudo.reason"), s.Reason)
@@ -67,7 +67,8 @@ func realSudo(args []string) error {
 	return err
 }
 
-func shellJoin(args []string) string {
+// ShellJoin quotes args the way a shell would need them, for display.
+func ShellJoin(args []string) string {
 	out := make([]string, len(args))
 	for i, a := range args {
 		if a == "" || strings.ContainsAny(a, " \t'\"$\\*?;&|<>()") {
