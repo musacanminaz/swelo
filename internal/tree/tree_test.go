@@ -36,7 +36,7 @@ func TestBuildAndBrowse(t *testing.T) {
 	write(t, filepath.Join(home, "Library", "Caches", "x.bin"), 1<<20)
 	write(t, filepath.Join(home, "secret", "x.bin"), 1<<20)
 
-	root := Build(home, []string{filepath.Join(home, "secret")})
+	root := Build(home, []string{filepath.Join(home, "secret")}, nil)
 	if root.Children[0].Name != "big" || root.Children[0].Small != 1 {
 		t.Fatalf("children not sorted/folded: %+v", root.Children[0])
 	}

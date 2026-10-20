@@ -51,7 +51,11 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 
 	eng := clean.New(home, rs, cfg)
 	eng.FDA = perm.FullDiskAccess(home)
+	st := ui.NewStatus(w)
+	done := watchScan(eng, st, home)
 	results := eng.Scan()
+	done()
+	st.Stop()
 	var regen []string
 	skip := map[string]bool{}
 	for _, r := range results {

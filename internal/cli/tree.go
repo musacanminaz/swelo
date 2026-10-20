@@ -38,7 +38,11 @@ func runTree(in *bufio.Reader, w io.Writer, home, dir string, full bool) error {
 		Duration: i18n.T("plan.time.analyze"),
 	})
 	fmt.Fprintf(w, " %s\n", ui.Dim(i18n.T("scanning")))
-	root := tree.Build(abs, skip)
+	st := ui.NewStatus(w)
+	root := tree.Build(abs, skip, func(dir string, n, bytes int64) {
+		st.Set(i18n.T("prog.tree"), n, ui.Bytes(bytes), short(dir, home))
+	})
+	st.Stop()
 	b := tree.NewBrowser(root, home, protected)
 	if _, err := tea.NewProgram(b, tea.WithAltScreen()).Run(); err != nil {
 		return err

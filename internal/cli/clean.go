@@ -72,7 +72,11 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 		Duration: i18n.T("plan.time.clean"),
 	})
 	fmt.Fprintf(w, " %s\n", ui.Dim(i18n.T("scanning")))
+	st := ui.NewStatus(w)
+	done := watchScan(eng, st, home)
 	results := eng.Scan()
+	done()
+	st.Stop()
 	before := clean.FreeBytes(home)
 
 	var safe, risky int64

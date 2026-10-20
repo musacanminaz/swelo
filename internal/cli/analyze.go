@@ -79,10 +79,20 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 	done := make(chan []clean.Result)
 	go func() { done <- eng.Scan() }()
 	start := time.Now()
+	prog := ui.NewStatus(w)
 	res := analyze.Scan(analyze.Options{
 		Home: home, Categories: cats, Protected: perm.ProtectedDirs(home), Full: full, BigFile: 1e9,
+		Progress: watchDirs(prog, home),
 	})
+	var n int64
+	for _, v := range res.Sizes {
+		n += v
+	}
+	prog.Step(i18n.T("step.home"), ui.Bytes(n), len(res.BigFiles), res.Unreadable)
+	prog.Set("%s", i18n.T("prog.freeable"))
 	results := <-done
+	prog.Step("%s", i18n.T("step.freeable"))
+	prog.Stop()
 
 	// what clean could free, per category
 	freeable := map[string]int64{}

@@ -69,7 +69,17 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 	for _, r := range cfg.Roots {
 		roots = append(roots, rules.Expand(r, home))
 	}
-	pkgs := uninstall.List(uninstall.NewEnv(home, roots), o.only)
+	env := uninstall.NewEnv(home, roots)
+	st := ui.NewStatus(w)
+	env.Progress = func(id string, n int) {
+		if n < 0 {
+			st.Set(i18n.T("prog.provider"), i18n.T("prov."+id))
+		} else {
+			st.Step(i18n.T("step.provider"), i18n.T("prov."+id), n)
+		}
+	}
+	pkgs := uninstall.List(env, o.only)
+	st.Stop()
 	uninstall.SortBySize(pkgs)
 
 	var chosen []uninstall.Package

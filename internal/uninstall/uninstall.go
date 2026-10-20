@@ -42,7 +42,10 @@ type Env struct {
 	AppDirs            []string
 	FDA                bool                  // Full Disk Access: app Containers may be read
 	Running            func(app string) bool // is this .app running
-	pins               map[string][]pin
+	// Progress, if set, is told when a provider starts (n < 0) and how many
+	// packages it found when it ends.
+	Progress func(provider string, n int)
+	pins     map[string][]pin
 }
 
 type pin struct{ project, version string }
@@ -100,7 +103,14 @@ func List(e *Env, only []string) []Package {
 		if len(only) > 0 && !contains(only, p.ID) {
 			continue
 		}
-		all = append(all, p.List(e)...)
+		if e.Progress != nil {
+			e.Progress(p.ID, -1)
+		}
+		found := p.List(e)
+		if e.Progress != nil {
+			e.Progress(p.ID, len(found))
+		}
+		all = append(all, found...)
 	}
 	viaJDK := map[string]bool{}
 	for _, p := range all {

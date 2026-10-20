@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -39,6 +40,9 @@ type Options struct {
 	Full       bool
 	BigFile    int64
 	Workers    int
+	// Progress, if set, is called from scan goroutines as each directory is
+	// read, with running totals; it must be safe for concurrent use.
+	Progress func(dir string, dirs, files, bytes int64)
 }
 
 type scanner struct {
@@ -49,6 +53,8 @@ type scanner struct {
 	sem      chan struct{}
 	wg       sync.WaitGroup
 	seen     sync.Map // inode -> struct{} for hard links
+
+	dirs, files, bytes atomic.Int64
 }
 
 type prefix struct{ path, id string }
@@ -104,7 +110,7 @@ func (s *scanner) walk(dir, cat string) {
 	}
 	entries, _ := f.Readdir(-1)
 	f.Close()
-	var local int64
+	var local, nfiles int64
 	for _, info := range entries {
 		p := filepath.Join(dir, info.Name())
 		mode := info.Mode()
@@ -138,6 +144,7 @@ func (s *scanner) walk(dir, cat string) {
 			}
 			size := st.Blocks * 512
 			local += size
+			nfiles++
 			if s.o.BigFile > 0 && size >= s.o.BigFile {
 				s.mu.Lock()
 				s.res.BigFiles = append(s.res.BigFiles, File{p, size})
@@ -148,6 +155,9 @@ func (s *scanner) walk(dir, cat string) {
 	s.mu.Lock()
 	s.res.Sizes[cat] += local
 	s.mu.Unlock()
+	if s.o.Progress != nil {
+		s.o.Progress(dir, s.dirs.Add(1), s.files.Add(nfiles), s.bytes.Add(local))
+	}
 }
 
 // Classify returns the category id for an arbitrary path (longest prefix).

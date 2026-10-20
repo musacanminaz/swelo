@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -51,6 +52,27 @@ type Engine struct {
 	excludes []*regexp.Regexp
 	projects []string // expanded project roots
 	cwds     []string // working directories of running processes
+
+	// OnProgress, if set, hears what Scan is doing; calls are serialized.
+	OnProgress func(Progress)
+	progMu     sync.Mutex
+}
+
+// Progress is one step of a Scan. Stage is "rule" (Detail: rule id), "walk"
+// (Detail: the directory being read, N: directories read, Found: matches),
+// "measure" or "check" (Detail: the item, N of Total done).
+type Progress struct {
+	Stage, Detail   string
+	N, Total, Found int
+}
+
+func (e *Engine) report(p Progress) {
+	if e.OnProgress == nil {
+		return
+	}
+	e.progMu.Lock()
+	e.OnProgress(p)
+	e.progMu.Unlock()
 }
 
 // New builds an engine and its safety guard from rules and config.
@@ -132,6 +154,9 @@ func (e *Engine) Scan() []Result {
 		if r.Disabled {
 			continue
 		}
+		if r.Kind != "artifact" {
+			e.report(Progress{Stage: "rule", Detail: r.ID, N: i + 1, Total: len(e.Rules)})
+		}
 		switch r.Kind {
 		case "artifact":
 			artifact = append(artifact, i)
@@ -150,7 +175,11 @@ func (e *Engine) Scan() []Result {
 			all = append(all, &results[i].Items[j])
 		}
 	}
-	measure(all)
+	var measured atomic.Int64
+	measure(all, func(it *Item) {
+		e.report(Progress{Stage: "measure", Detail: it.Path, N: int(measured.Add(1)), Total: len(all)})
+	})
+	checked := 0
 	for i := range results {
 		res := &results[i]
 		if pat := e.RunningMatch(res.Rule); pat != "" && len(res.Items) > 0 {
@@ -163,6 +192,8 @@ func (e *Engine) Scan() []Result {
 		}
 		var keep []Item
 		for _, it := range res.Items {
+			checked++
+			e.report(Progress{Stage: "check", Detail: it.Path, N: checked, Total: len(all)})
 			if it.Skip == "" && e.excluded(it.Path) {
 				it.Skip = "excluded in config"
 			}
@@ -202,6 +233,7 @@ func (e *Engine) walkArtifacts(results []Result, idx []int) {
 		}
 	}
 	seen := map[string]bool{}
+	dirs, found := 0, 0
 	for _, root := range e.projects {
 		real, err := filepath.EvalSymlinks(root)
 		if err != nil || seen[real] {
@@ -212,6 +244,10 @@ func (e *Engine) walkArtifacts(results []Result, idx []int) {
 			if err != nil || !d.IsDir() {
 				return nil
 			}
+			dirs++
+			if dirs%32 == 1 {
+				e.report(Progress{Stage: "walk", Detail: p, N: dirs, Found: found})
+			}
 			name := d.Name()
 			if name == ".git" || (filepath.Dir(p) == e.Home && (name == "Library" || name == ".Trash")) {
 				return filepath.SkipDir
@@ -221,6 +257,8 @@ func (e *Engine) walkArtifacts(results []Result, idx []int) {
 				if hasMarker(parent, results[i].Rule.Markers) {
 					// excluded matches are still listed so the user sees them skipped
 					results[i].Items = append(results[i].Items, Item{Path: p, Project: parent})
+					found++
+					e.report(Progress{Stage: "walk", Detail: p, N: dirs, Found: found})
 					return filepath.SkipDir
 				}
 			}
@@ -230,6 +268,7 @@ func (e *Engine) walkArtifacts(results []Result, idx []int) {
 			return nil
 		})
 	}
+	e.report(Progress{Stage: "walk", N: dirs, Found: found})
 }
 
 func hasMarker(dir string, markers []string) bool {
@@ -405,7 +444,7 @@ func run(argv []string, timeout time.Duration) (string, error) {
 	return buf.String(), err
 }
 
-func measure(items []*Item) {
+func measure(items []*Item, done func(*Item)) {
 	ch := make(chan *Item)
 	var wg sync.WaitGroup
 	for w := 0; w < 8; w++ {
@@ -414,6 +453,7 @@ func measure(items []*Item) {
 			defer wg.Done()
 			for it := range ch {
 				it.Size = DirSize(it.Path)
+				done(it)
 			}
 		}()
 	}

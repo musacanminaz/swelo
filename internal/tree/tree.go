@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -30,7 +31,10 @@ type Node struct {
 const MinFile = 1 << 20
 
 // Build scans root in parallel. Folders in skip are listed but not read.
-func Build(root string, skip []string) *Node {
+// progress, if set, is called from scan goroutines with the directory just
+// read and running totals.
+func Build(root string, skip []string, progress func(dir string, dirs, bytes int64)) *Node {
+	var ndirs, nbytes atomic.Int64
 	n := &Node{Name: root, Path: root, Dir: true}
 	sem := make(chan struct{}, 16)
 	var wg sync.WaitGroup
@@ -49,6 +53,12 @@ func Build(root string, skip []string) *Node {
 		}
 		entries, _ := f.Readdir(-1)
 		f.Close()
+		var local int64
+		defer func() {
+			if progress != nil {
+				progress(d.Path, ndirs.Add(1), nbytes.Add(local))
+			}
+		}()
 		for _, info := range entries {
 			p := filepath.Join(d.Path, info.Name())
 			if info.Mode()&os.ModeSymlink != 0 {
@@ -80,6 +90,7 @@ func Build(root string, skip []string) *Node {
 				}
 			}
 			size := st.Blocks * 512
+			local += size
 			if size < MinFile {
 				d.Small++
 				d.SmallSz += size
