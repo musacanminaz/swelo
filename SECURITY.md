@@ -7,7 +7,7 @@ files, files in macOS-protected folders, or commands run from untrusted
 repository / app metadata.
 
 **Report privately:** open a [GitHub security advisory](https://github.com/musacanminaz/swelo/security/advisories/new)
-(preferred) or email can@marsalasoft.com. Please include the macOS version, the
+. Please include the macOS version, the
 swelo version (`swelo --version`) and the steps or folder layout that trigger it.
 You will get a reply within a week.
 
