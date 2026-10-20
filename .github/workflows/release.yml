@@ -6,13 +6,15 @@ permissions:
   contents: write
 jobs:
   release:
-    runs-on: macos-latest
+    # cross-compiled (CGO off): macOS runners are often out of capacity; the
+    # tagged commit was already tested on macOS by ci.yml
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test ./...
+      - run: GOOS=darwin go vet ./...
       - name: Build
         run: |
           v="${GITHUB_REF_NAME#v}"
@@ -26,7 +28,7 @@ jobs:
             cp README.md LICENSE "$d/"
             tar -czf "out/$d.tar.gz" "$d"
           done
-          (cd out && shasum -a 256 *.tar.gz > checksums.txt)
+          (cd out && sha256sum *.tar.gz > checksums.txt)
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
