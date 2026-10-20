@@ -9,13 +9,17 @@ import (
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
+	"github.com/musacanminaz/swelo/internal/ui"
 	"github.com/spf13/cobra"
 )
 
 // Version is set at build time with -ldflags "-X .../cli.Version=x.y.z".
 var Version = "dev"
 
-var langFlag string
+var (
+	langFlag  string
+	introFlag bool
+)
 
 // Execute runs the root command.
 func Execute() error {
@@ -29,11 +33,15 @@ func Execute() error {
 			i18n.Set(langFlag)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if introFlag {
+				os.Remove(introMarker())
+			}
 			welcome(cmd.OutOrStdout())
 			return nil
 		},
 	}
 	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
+	root.Flags().BoolVar(&introFlag, "intro", false, "show the first-run introduction again before the next scan")
 	root.AddCommand(permissionsCmd())
 	return root.Execute()
 }
@@ -51,22 +59,22 @@ func configDir() string { return filepath.Join(home(), ".config", "swelo") }
 func stateDir() string  { return filepath.Join(home(), ".local", "state", "swelo") }
 
 func welcome(w io.Writer) {
-	fmt.Fprintf(w, "\n %s %s — %s\n\n", bold("swelo"), Version, i18n.T("tagline"))
+	fmt.Fprintf(w, "\n %s %s — %s\n\n", ui.Bold("swelo"), Version, i18n.T("tagline"))
 
-	fmt.Fprintf(w, " %s\n", bold(i18n.T("what.title")))
-	fmt.Fprintln(w, indent(i18n.T("what.body"), "   "))
+	fmt.Fprintf(w, " %s\n", ui.Bold(i18n.T("what.title")))
+	fmt.Fprintln(w, ui.Indent(i18n.T("what.body"), "   "))
 	fmt.Fprintln(w)
 
-	fmt.Fprintf(w, " %s\n", bold(i18n.T("never.title")))
+	fmt.Fprintf(w, " %s\n", ui.Bold(i18n.T("never.title")))
 	for _, k := range []string{"never.1", "never.2", "never.3", "never.4", "never.5"} {
 		fmt.Fprintf(w, "   • %s\n", i18n.T(k))
 	}
 	fmt.Fprintln(w)
 
 	permSummary(w)
-	fmt.Fprintf(w, "   %s\n\n", dim(i18n.T("perm.more")))
+	fmt.Fprintf(w, "   %s\n\n", ui.Dim(i18n.T("perm.more")))
 
-	fmt.Fprintf(w, " %s\n", bold(i18n.T("cmds.title")))
+	fmt.Fprintf(w, " %s\n", ui.Bold(i18n.T("cmds.title")))
 	cmds := []struct {
 		name  string
 		ready bool
@@ -74,7 +82,7 @@ func welcome(w io.Writer) {
 	for _, c := range cmds {
 		soon := ""
 		if !c.ready {
-			soon = " " + dim(i18n.T("soon"))
+			soon = " " + ui.Dim(i18n.T("soon"))
 		}
 		fmt.Fprintf(w, "   %-12s %s%s\n", c.name, i18n.T("cmd."+c.name), soon)
 	}
@@ -82,17 +90,17 @@ func welcome(w io.Writer) {
 }
 
 func permSummary(w io.Writer) {
-	fmt.Fprintf(w, " %s\n", bold(i18n.T("perm.title")))
-	fmt.Fprintf(w, "   %s %-22s %s\n", green("✓"), i18n.T("perm.user"), i18n.T("perm.user.ok"))
+	fmt.Fprintf(w, " %s\n", ui.Bold(i18n.T("perm.title")))
+	fmt.Fprintf(w, "   %s %-22s %s\n", ui.Green("✓"), i18n.T("perm.user"), i18n.T("perm.user.ok"))
 	if perm.FullDiskAccess(home()) {
-		fmt.Fprintf(w, "   %s %-22s %s\n", green("✓"), i18n.T("perm.fda"), i18n.T("perm.fda.ok"))
+		fmt.Fprintf(w, "   %s %-22s %s\n", ui.Green("✓"), i18n.T("perm.fda"), i18n.T("perm.fda.ok"))
 	} else {
-		fmt.Fprintf(w, "   %s %-22s %s\n", yellow("–"), i18n.T("perm.fda"), i18n.T("perm.fda.no"))
+		fmt.Fprintf(w, "   %s %-22s %s\n", ui.Yellow("–"), i18n.T("perm.fda"), i18n.T("perm.fda.no"))
 	}
 	if perm.IsAdmin() {
-		fmt.Fprintf(w, "   %s %-22s %s\n", dim("–"), i18n.T("perm.sudo"), i18n.T("perm.sudo.admin"))
+		fmt.Fprintf(w, "   %s %-22s %s\n", ui.Dim("–"), i18n.T("perm.sudo"), i18n.T("perm.sudo.admin"))
 	} else {
-		fmt.Fprintf(w, "   %s %-22s %s\n", yellow("–"), i18n.T("perm.sudo"), i18n.T("perm.sudo.no"))
+		fmt.Fprintf(w, "   %s %-22s %s\n", ui.Yellow("–"), i18n.T("perm.sudo"), i18n.T("perm.sudo.no"))
 	}
 }
 
@@ -103,7 +111,7 @@ func permissionsCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			w := cmd.OutOrStdout()
 			fmt.Fprintln(w)
-			fmt.Fprintln(w, indent(i18n.T("permdoc.intro"), " "))
+			fmt.Fprintln(w, ui.Indent(i18n.T("permdoc.intro"), " "))
 			fmt.Fprintln(w)
 			permSummary(w)
 			for _, s := range []struct{ title, body string }{
@@ -112,9 +120,9 @@ func permissionsCmd() *cobra.Command {
 				{i18n.T("perm.sudo"), i18n.T("permdoc.sudo")},
 				{"Network", i18n.T("permdoc.net")},
 			} {
-				fmt.Fprintf(w, "\n %s\n%s\n", bold(s.title), indent(s.body, "   "))
+				fmt.Fprintf(w, "\n %s\n%s\n", ui.Bold(s.title), ui.Indent(s.body, "   "))
 			}
-			fmt.Fprintf(w, "\n %s\n   %s\n   %s\n\n", bold(i18n.T("permdoc.files")),
+			fmt.Fprintf(w, "\n %s\n   %s\n   %s\n\n", ui.Bold(i18n.T("permdoc.files")),
 				filepath.Join(configDir(), "config.yaml"), filepath.Join(stateDir(), "history.jsonl"))
 			return nil
 		},

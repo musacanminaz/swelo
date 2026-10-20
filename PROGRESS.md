@@ -8,9 +8,9 @@ Plan: phases 1–7 (intro & safety → clean → analyze → uninstall → optim
 - [x] `swelo permissions`: Full Disk Access + admin detection, every permission explained
 - [x] `internal/safety`: single deletion gate (roots, protected paths, symlink escape, git-tracked, recent project, .env/.sql, log) + tests
 - [x] CI (macOS: gofmt, vet, test, build), MIT license, README
-- [ ] First-run intro gate (shown once before the first scan, Enter to continue)
-- [ ] "Plan box" helper shown before every command
-- [ ] sudo step helper (show command, reason, undo; ask [y/N]; --no-sudo; --yes never approves)
+- [x] First-run intro gate (`introGate`, shown once before the first scan, Enter to continue; `swelo --intro` re-arms) — wired into scanning commands in phase 2
+- [x] "Plan box" helper (`ui.ShowPlan`) + `ui.Confirm` (y/e/evet, default on empty/EOF)
+- [x] sudo step dialog (`ui.RunSudo`): exact command, reason, undo; [y/N]; --no-sudo; `sudo -k` afterwards; never auto-approved
 
 ## Phase 2 — clean
 - [ ] YAML rule engine (embedded defaults + ~/.config/swelo/rules.yaml)

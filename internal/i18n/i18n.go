@@ -127,4 +127,28 @@ var msgs = map[string][2]string{
 		"Telemetri yok. Ağ sadece `swelo update` ile yeni sürüm kontrolünde kullanılır.",
 	},
 	"permdoc.files": {"Files swelo writes", "swelo'nun yazdığı dosyalar"},
+
+	"plan.before": {"before it starts", "çalıştırmadan önce"},
+	"plan.scan":   {"Will scan", "Taranacak"},
+	"plan.read":   {"Will read", "Okunacak"},
+	"plan.delete": {"Will delete", "Silinecek"},
+	"plan.perm":   {"Permissions", "Yetki"},
+	"plan.time":   {"Takes about", "Tahmini süre"},
+	"confirm.yn":  {"[y/N]", "[e/H]"},
+	"confirm.Yn":  {"[Y/n]", "[E/h]"},
+	"continue":    {"Continue?", "Devam?"},
+
+	"intro.first":  {"First run: here is what swelo does before it scans anything.", "İlk çalıştırma: swelo bir şey taramadan önce ne yaptığını anlatıyor."},
+	"intro.config": {"Settings file", "Ayar dosyası"},
+	"intro.enter":  {"Press Enter to continue, Ctrl+C to quit.", "Devam etmek için Enter, çıkmak için Ctrl+C."},
+
+	"sudo.title":        {"This step needs administrator rights", "Bu adım yönetici yetkisi istiyor"},
+	"sudo.action":       {"Step", "Adım"},
+	"sudo.reason":       {"Why", "Neden"},
+	"sudo.command":      {"Command", "Komut"},
+	"sudo.undo":         {"Undo", "Geri alma"},
+	"sudo.noundo":       {"cannot be undone", "geri alınamaz"},
+	"sudo.ask":          {"Run it? (your password is never seen or stored by swelo)", "Çalıştırılsın mı? (şifreniz swelo tarafından görülmez ve saklanmaz)"},
+	"sudo.skipped":      {"Skipped.", "Atlandı."},
+	"sudo.skipped.flag": {"Skipped (--no-sudo).", "Atlandı (--no-sudo)."},
 }
