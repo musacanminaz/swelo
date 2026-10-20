@@ -50,14 +50,21 @@ func TestGitAndBrew(t *testing.T) {
 	os.WriteFile(filepath.Join(locked, ".git", "index.lock"), nil, 0o644)
 	marker := filepath.Join(root, "pwned")
 	exec.Command("git", "-C", evil, "config", "gc.recentObjectsHook", "touch "+marker).Run()
+	// keys in config.worktree or included files must be checked too
+	sneaky := filepath.Join(root, "sneaky")
+	os.MkdirAll(sneaky, 0o755)
+	exec.Command("git", "-C", sneaky, "init", "-q").Run()
+	os.WriteFile(filepath.Join(root, "inc.cfg"), []byte("[core]\n\tsshCommand = touch "+marker+"\n"), 0o644)
+	exec.Command("git", "-C", sneaky, "config", "include.path", filepath.Join(root, "inc.cfg")).Run()
+	exec.Command("git", "-C", repo, "remote", "add", "origin", "https://example.com/r.git").Run()
 	os.MkdirAll(filepath.Join(root, "app", "node_modules", "dep", ".git"), 0o755)
 
 	repos := FindRepos([]string{root}, map[string]bool{"node_modules": true})
-	if len(repos) != 4 {
+	if len(repos) != 5 {
 		t.Fatalf("repos = %v (must not descend into node_modules)", repos)
 	}
 	task := Git(Real, repos, 1, func(d string) bool { return d == busy })
-	if len(task.Items) != 1 || task.Items[0] != repo {
+	if len(task.Items) != 1 || task.Items[0] != repo { // repo with a normal remote is fine
 		t.Fatalf("git items = %v (locked, busy and hostile-config repos must be skipped)", task.Items)
 	}
 	if _, err := os.Stat(marker); err == nil {

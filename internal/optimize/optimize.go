@@ -187,18 +187,38 @@ func FindRepos(roots []string, skip map[string]bool) []string {
 	return repos
 }
 
-// commandKeys are git config keys that can make git run a program.
-var commandKeys = regexp.MustCompile(`(?i)(hook|command|cmd|program|fsmonitor|editor|pager|askpass|^include\.|^includeif\.|^filter\.|^alias\.|^credential\.)`)
+// safeKeys are the repository config keys a repo may set and still be gc'ed.
+// Anything else from a repo-controlled file (config, config.worktree,
+// included files) makes swelo skip the repository: an allowlist, because
+// git keeps adding keys that run programs.
+var safeKeys = regexp.MustCompile(`^(core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|autocrlf|safecrlf|symlinks|eol|sparsecheckout|sparsecheckoutcone|untrackedcache|splitindex|commitgraph|multipackindex)|` +
+	`remote\.[^.]+\.(url|fetch|pushurl|tagopt|prune|mirror)|branch\.[^.]+\.(remote|merge|rebase|pushremote|vscode-merge-base|github-pr-owner-number)|` +
+	`user\.(name|email|signingkey)|pull\.(rebase|ff)|push\.(default|autosetupremote)|init\.defaultbranch|fetch\.prune|` +
+	`lfs\.(repositoryformatversion|url)|submodule\.[^.]+\.(url|active|branch)|gc\.(auto|autopacklimit|reflogexpire|reflogexpireunreachable)|` +
+	`maintenance\.(auto|strategy)|rerere\.enabled|merge\.ff|commit\.gpgsign|tag\.gpgsign|gpg\.format)$`)
 
-// unsafeConfig reports whether the repository's own config sets any key that
-// could execute a command (or pulls in other config files).
+// unsafeConfig reports whether any config key that does not come from the
+// user's global or system git config is outside safeKeys.
 func unsafeConfig(run Runner, repo string) bool {
-	out, err := run("git", "-C", repo, "config", "--local", "--name-only", "--list")
+	trusted := map[string]bool{}
+	for _, scope := range []string{"--global", "--system"} {
+		out, _ := run("git", "config", scope, "--show-origin", "--name-only", "--list")
+		for _, l := range strings.Split(out, "\n") {
+			if origin, _, ok := strings.Cut(l, "\t"); ok {
+				trusted[origin] = true
+			}
+		}
+	}
+	out, err := run("git", "-C", repo, "config", "--show-origin", "--name-only", "--list")
 	if err != nil {
 		return true
 	}
-	for _, k := range strings.Fields(out) {
-		if commandKeys.MatchString(k) {
+	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
+		origin, key, ok := strings.Cut(l, "\t")
+		if !ok {
+			return true // unexpected output: be conservative
+		}
+		if !trusted[origin] && !safeKeys.MatchString(strings.ToLower(key)) {
 			return true
 		}
 	}
