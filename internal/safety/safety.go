@@ -19,6 +19,7 @@ type Guard struct {
 	Protected  []string // these paths and everything under them are never deleted
 	RecentDays int      // projects touched within this many days are skipped (0 = off)
 	LogPath    string   // JSON-lines deletion log ("" = no log)
+	SkipNames  []string // regenerable sibling folders ignored by the recency check
 	Now        func() time.Time
 }
 
@@ -123,8 +124,8 @@ func (g *Guard) underAny(p string, list []string, inclusive bool) bool {
 	return false
 }
 
-// recent reports whether anything directly in project (except skip), or its git
-// index, was modified within RecentDays.
+// recent reports whether anything directly in project (except skip and
+// SkipNames), or its git index, was modified within RecentDays.
 func (g *Guard) recent(project, skip string) bool {
 	now := time.Now
 	if g.Now != nil {
@@ -136,7 +137,7 @@ func (g *Guard) recent(project, skip string) bool {
 		return true // unreadable: be conservative
 	}
 	for _, e := range entries {
-		if e.Name() == skip {
+		if e.Name() == skip || contains(g.SkipNames, e.Name()) {
 			continue
 		}
 		if info, err := e.Info(); err == nil && info.ModTime().After(cutoff) {
@@ -175,4 +176,13 @@ func (g *Guard) log(path string, size int64, rule string) error {
 func IsRefusal(err error) bool {
 	var r *Refusal
 	return errors.As(err, &r)
+}
+
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }

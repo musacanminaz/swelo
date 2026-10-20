@@ -13,7 +13,12 @@ Plan: phases 1–7 (intro & safety → clean → analyze → uninstall → optim
 - [x] sudo step dialog (`ui.RunSudo`): exact command, reason, undo; [y/N]; --no-sudo; `sudo -k` afterwards; never auto-approved
 
 ## Phase 2 — clean
-- [ ] YAML rule engine (embedded defaults + ~/.config/swelo/rules.yaml)
-- [ ] Port all temizle.sh rules, add new 🟢 rules
-- [ ] Risk levels (--risky), confirmation, history log
+- [x] YAML rule engine (`internal/rules/default.yaml` embedded; user rules.yaml overrides by id; config.yaml roots/exclude/protected/recent_days/disable/top)
+- [x] Ported temizle.sh rules + new: python, cocoapods, rust, terraform, project .gradle, pip/CocoaPods caches, browser caches, Playwright browsers (keep newest), crash reports, brew, uv, risky pub-cache / android build-tools / old containers / unavailable simulators, report-only big user data
+- [x] Risk levels (--risky), confirmation before delete, history log, --only, --all, --recent-days
+- [x] Per-project busy check (a process has its cwd in the project) instead of global "vite is running"
+- [x] Playwright MCP: a SingletonLock is only "in use" if its PID is alive
+- [x] Engine tests on a fake home; tests never run command rules or touch absolute paths
+- [ ] Translate skip reasons (currently English in TR output)
+- [ ] Docker: show reclaimable size instead of raw `docker system df`
 - [ ] v0.1.0 release (goreleaser, musacanminaz/homebrew-tap)

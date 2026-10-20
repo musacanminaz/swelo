@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -30,4 +31,18 @@ func Red(s string) string    { return ansi("31", s) }
 // Indent prefixes every line of s with pre.
 func Indent(s, pre string) string {
 	return pre + strings.ReplaceAll(s, "\n", "\n"+pre)
+}
+
+// Bytes formats a size like "1.4 GB" (decimal units, as Finder shows them).
+func Bytes(n int64) string {
+	const k = 1000
+	switch {
+	case n >= k*k*k:
+		return fmt.Sprintf("%.1f GB", float64(n)/(k*k*k))
+	case n >= k*k:
+		return fmt.Sprintf("%.0f MB", float64(n)/(k*k))
+	case n >= k:
+		return fmt.Sprintf("%.0f KB", float64(n)/k)
+	}
+	return fmt.Sprintf("%d B", n)
 }

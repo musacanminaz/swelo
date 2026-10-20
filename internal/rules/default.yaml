@@ -1,0 +1,290 @@
+# swelo default rules. Users add, override (same id) or disable rules in
+# ~/.config/swelo/rules.yaml and ~/.config/swelo/config.yaml.
+#
+# kind: artifact  directories named `names` inside project roots, deleted only when
+#                 the parent has one of `markers` (glob ok; empty = no marker needed)
+# kind: path      fixed `paths` (~ and $UID expanded, globs ok); with `children: true`
+#                 each entry inside is an item (filters: name_glob, older_than_days,
+#                 skip_if_child, keep_latest per name prefix)
+# kind: command   runs `run` commands; `show` / `size_cmd` describe it in a dry run
+# risk: safe (default) | risky (--risky) | report (never deleted)
+# running: skip the rule while a process matching one of these is running
+# Artifact items are also skipped while any process has its working directory
+# inside that project (dev servers, watchers, builds).
+
+# ---------- project artifacts ----------
+- id: node
+  group: build
+  kind: artifact
+  names: [node_modules, .next, .nuxt, .output, .svelte-kit, .turbo, .parcel-cache, .expo, dist, coverage]
+  markers: [package.json]
+  desc:
+    en: JavaScript dependencies and build output
+    tr: JavaScript bağımlılıkları ve build çıktıları
+  rebuild: npm/pnpm/yarn install, npm run build
+
+- id: flutter
+  group: build
+  kind: artifact
+  names: [build, .dart_tool]
+  markers: [pubspec.yaml]
+  desc:
+    en: Flutter build output
+    tr: Flutter build çıktıları
+  rebuild: flutter pub get
+
+- id: cocoapods
+  group: build
+  kind: artifact
+  names: [Pods]
+  markers: [Podfile]
+  desc:
+    en: CocoaPods dependencies
+    tr: CocoaPods bağımlılıkları
+  rebuild: pod install
+
+- id: python
+  group: build
+  kind: artifact
+  names: [.venv, venv, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache]
+  markers: []
+  desc:
+    en: Python virtualenvs and caches
+    tr: Python sanal ortamları ve cache'leri
+  rebuild: python -m venv .venv && pip install -r requirements.txt (or uv sync)
+
+- id: rust
+  group: build
+  kind: artifact
+  names: [target]
+  markers: [Cargo.toml]
+  desc:
+    en: Rust build output
+    tr: Rust build çıktıları
+  rebuild: cargo build
+
+- id: gradle-project
+  group: build
+  kind: artifact
+  names: [.gradle]
+  markers: [build.gradle, build.gradle.kts, settings.gradle, settings.gradle.kts]
+  desc:
+    en: Per-project Gradle caches
+    tr: Proje içi Gradle cache'leri
+  rebuild: next Gradle build
+
+- id: terraform
+  group: build
+  kind: artifact
+  names: [.terraform]
+  markers: ["*.tf"]
+  desc:
+    en: Terraform provider plugins
+    tr: Terraform provider eklentileri
+  rebuild: terraform init
+
+# ---------- caches ----------
+- id: package-caches
+  group: cache
+  kind: path
+  paths:
+    - ~/Library/Caches/Yarn
+    - ~/.npm/_cacache
+    - ~/Library/Caches/pip
+    - ~/Library/Caches/CocoaPods
+  desc:
+    en: Package manager download caches
+    tr: Paket yöneticisi indirme cache'leri
+  rebuild: re-downloaded on next install
+
+- id: gradle
+  group: cache
+  kind: path
+  paths: [~/.gradle/caches]
+  running: [GradleDaemon, "Android Studio"]
+  desc:
+    en: Gradle dependency cache
+    tr: Gradle bağımlılık cache'i
+  rebuild: re-downloaded on next Gradle build (first build is slower)
+
+- id: xcode-derived
+  group: cache
+  kind: path
+  paths: [~/Library/Developer/Xcode/DerivedData]
+  running: [Xcode.app/Contents/MacOS/Xcode]
+  desc:
+    en: Xcode build data
+    tr: Xcode build verileri
+  rebuild: next Xcode build
+
+- id: vscode
+  group: cache
+  kind: path
+  paths:
+    - ~/Library/Application Support/Code/CachedExtensionVSIXs
+    - ~/Library/Caches/com.microsoft.VSCode.ShipIt
+  desc:
+    en: VS Code extension and updater caches
+    tr: VS Code eklenti ve güncelleyici cache'leri
+
+- id: browser-cache
+  group: cache
+  kind: path
+  paths:
+    - ~/Library/Caches/Google/Chrome/*/Cache
+    - ~/Library/Caches/BraveSoftware/Brave-Browser/*/Cache
+    - ~/Library/Caches/Microsoft Edge/*/Cache
+    - ~/Library/Application Support/Google/Chrome/*/Code Cache
+    - ~/Library/Application Support/BraveSoftware/Brave-Browser/*/Code Cache
+  running: ["Google Chrome.app", "Brave Browser.app", "Microsoft Edge.app"]
+  desc:
+    en: Browser HTTP and code caches (profiles are never touched)
+    tr: Tarayıcı HTTP ve kod cache'leri (profillere dokunulmaz)
+
+- id: playwright-browsers
+  group: cache
+  kind: path
+  paths: [~/Library/Caches/ms-playwright]
+  children: true
+  keep_latest: 1
+  desc:
+    en: Old Playwright browser builds (newest of each kept)
+    tr: Eski Playwright tarayıcı sürümleri (her birinin en yenisi kalır)
+  rebuild: npx playwright install
+
+- id: playwright-mcp
+  group: cache
+  kind: path
+  paths: [~/Library/Caches/ms-playwright-mcp]
+  children: true
+  skip_if_child: SingletonLock
+  desc:
+    en: Closed Playwright MCP browser profiles (profiles locked by a live browser are skipped)
+    tr: Kapalı Playwright MCP tarayıcı profilleri (çalışan bir tarayıcının kilitlediği profiller atlanır)
+
+- id: claude-tmp
+  group: cache
+  kind: path
+  paths: [/private/tmp/claude-$UID]
+  children: true
+  name_glob: "-*"
+  older_than_days: 1
+  desc:
+    en: Claude Code session temp folders older than a day
+    tr: 1 günden eski Claude Code oturum geçici klasörleri
+
+- id: logs
+  group: cache
+  kind: path
+  paths: [~/Library/Logs/DiagnosticReports]
+  children: true
+  older_than_days: 30
+  desc:
+    en: Crash reports older than 30 days
+    tr: 30 günden eski çökme raporları
+
+# ---------- tools ----------
+- id: docker
+  group: docker
+  kind: command
+  requires: docker
+  check: [docker, info]
+  show: [docker, system, df]
+  run:
+    - [docker, builder, prune, -af]
+    - [docker, image, prune, -af]
+  desc:
+    en: Docker build cache and images no container uses (volumes untouched)
+    tr: Docker build cache ve hiçbir container'ın kullanmadığı image'lar (volume'lara dokunulmaz)
+
+- id: pnpm-store
+  group: tools
+  kind: command
+  requires: pnpm
+  size_cmd: [pnpm, store, path]
+  run: [[pnpm, store, prune]]
+  desc:
+    en: pnpm store packages no project references
+    tr: Hiçbir projenin kullanmadığı pnpm store paketleri
+
+- id: brew
+  group: tools
+  kind: command
+  requires: brew
+  size_cmd: [brew, --cache]
+  run: [[brew, cleanup, --prune=all]]
+  desc:
+    en: Homebrew download cache and old versions
+    tr: Homebrew indirme cache'i ve eski sürümler
+
+- id: uv
+  group: tools
+  kind: command
+  requires: uv
+  size_cmd: [uv, cache, dir]
+  run: [[uv, cache, clean]]
+  desc:
+    en: uv package cache
+    tr: uv paket cache'i
+
+# ---------- risky (--risky) ----------
+- id: docker-containers
+  group: docker
+  risk: risky
+  kind: command
+  requires: docker
+  check: [docker, info]
+  show: [docker, ps, -a, --filter, status=exited, --format, "{{.Names}}\t{{.Status}}"]
+  run: [[docker, container, prune, -f, --filter, until=168h]]
+  desc:
+    en: Docker containers stopped for more than 7 days (frees their images on the next run)
+    tr: 7 günden uzun süredir durmuş Docker container'ları (image'ları sonraki çalışmada silinebilir)
+
+- id: pub-cache
+  group: tools
+  risk: risky
+  kind: path
+  paths: [~/.pub-cache/hosted]
+  desc:
+    en: Dart/Flutter package cache
+    tr: Dart/Flutter paket cache'i
+  rebuild: flutter pub get in each project
+
+- id: android-build-tools
+  group: tools
+  risk: risky
+  kind: path
+  paths: [~/Library/Android/sdk/build-tools]
+  children: true
+  keep_latest: 2
+  running: ["Android Studio"]
+  desc:
+    en: Old Android build-tools (newest two kept)
+    tr: Eski Android build-tools sürümleri (en yeni ikisi kalır)
+  rebuild: sdkmanager "build-tools;<version>"
+
+- id: simulators-unavailable
+  group: tools
+  risk: risky
+  kind: command
+  requires: xcrun
+  run: [[xcrun, simctl, delete, unavailable]]
+  desc:
+    en: iOS simulators whose runtime is no longer installed
+    tr: Runtime'ı artık yüklü olmayan iOS simülatörleri
+
+# ---------- report only ----------
+- id: big-user-data
+  group: report
+  risk: report
+  kind: path
+  paths:
+    - ~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared
+    - ~/Library/Group Containers/*.ru.keepcoder.Telegram
+    - ~/Library/Developer/Xcode/Archives
+    - ~/Library/Developer/CoreSimulator/Devices
+    - ~/Downloads
+    - ~/.Trash
+  desc:
+    en: Large personal data — clean it from inside each app
+    tr: Büyük kişisel veriler — her uygulamanın içinden temizleyin
