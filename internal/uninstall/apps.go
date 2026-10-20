@@ -115,7 +115,7 @@ func (e *Env) leftovers(id, name string) []string {
 		cands = append(cands, matching(filepath.Join(lib, "Group Containers"), func(n string) bool { return strings.HasSuffix(n, "."+id) })...)
 	}
 	cands = append(cands, matching(filepath.Join(lib, "LaunchAgents"), func(n string) bool {
-		return strings.HasPrefix(n, id) && strings.HasSuffix(n, ".plist")
+		return n == id+".plist" || (strings.HasPrefix(n, id+".") && strings.HasSuffix(n, ".plist"))
 	})...)
 	var out []string
 	seen := map[string]bool{}

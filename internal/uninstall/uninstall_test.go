@@ -195,13 +195,16 @@ func TestLeftoversRejectHostileIDs(t *testing.T) {
 	home, _ := filepath.EvalSymlinks(t.TempDir())
 	mkfile(t, filepath.Join(home, "Desktop", "thesis.docx"), "x")
 	mkfile(t, filepath.Join(home, "Library", "Caches", "ok.app", "c"), "x")
+	mkfile(t, filepath.Join(home, "Library", "LaunchAgents", "ok.app.helper.plist"), "x")
+	mkfile(t, filepath.Join(home, "Library", "LaunchAgents", "ok.apple.plist"), "x") // different app
 	e := &Env{Home: home}
 	for _, id := range []string{"../../Desktop", "..", "a/../../Desktop", "*", "", "x\x00y"} {
 		if got := e.leftovers(id, "App"); len(got) != 0 {
 			t.Errorf("id %q produced leftovers %v", id, got)
 		}
 	}
-	if got := e.leftovers("ok.app", "../../Desktop"); len(got) != 1 || !strings.HasSuffix(got[0], "Caches/ok.app") {
+	got := e.leftovers("ok.app", "../../Desktop")
+	if len(got) != 2 || !strings.HasSuffix(got[0], "Caches/ok.app") || !strings.HasSuffix(got[1], "ok.app.helper.plist") {
 		t.Errorf("hostile name must not add paths: %v", got)
 	}
 }
