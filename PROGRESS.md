@@ -23,3 +23,20 @@ Plan: phases 1–7 (intro & safety → clean → analyze → uninstall → optim
 - [x] Docker: reclaimable build cache size via `size_text_cmd`
 - [x] Security: git runs with fsmonitor/hooks disabled (hostile .git/config cannot execute); roots outside home must be owned by the user, not symlinks, not group/world-writable
 - [x] v0.1.0 release: tag → release workflow (darwin arm64/amd64 tarballs + checksums); tap formula builds from source (same shape homebrew-core needs)
+
+**v0.1.0 released 2026-10-20** — https://github.com/musacanminaz/swelo/releases/tag/v0.1.0
+Tap: https://github.com/musacanminaz/homebrew-tap (`brew install musacanminaz/tap/swelo`);
+`brew audit --strict --online` and `brew test` pass. To bump: update url + sha256 in
+Formula/swelo.rb after tagging.
+
+## Phase 3 — analyze
+- [ ] Category summary (projects, package caches, SDKs, Docker.raw, browsers, messaging, Downloads, Trash) with "clean can free" column
+- [ ] Largest single files (> 1 GB)
+- [ ] Projects list: last change, artifact size, untouched > 90 days
+- [ ] TUI tree (ncdu-like), delete = move to Trash
+- [ ] `--full` uses Full Disk Access folders
+
+## Phase 4 — uninstall
+## Phase 5 — optimize, status, history
+## Phase 6 — release polish (README GIF, SECURITY.md, tap auto-bump)
+## Phase 7 — homebrew-core (needs ≥75 stars or 30 forks/watchers, repo > 30 days old)
