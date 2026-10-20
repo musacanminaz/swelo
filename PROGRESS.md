@@ -22,4 +22,4 @@ Plan: phases 1–7 (intro & safety → clean → analyze → uninstall → optim
 - [x] Skip reasons translated (`i18n.Reason`)
 - [x] Docker: reclaimable build cache size via `size_text_cmd`
 - [x] Security: git runs with fsmonitor/hooks disabled (hostile .git/config cannot execute); roots outside home must be owned by the user, not symlinks, not group/world-writable
-- [ ] v0.1.0 release (goreleaser, musacanminaz/homebrew-tap)
+- [x] v0.1.0 release: tag → release workflow (darwin arm64/amd64 tarballs + checksums); tap formula builds from source (same shape homebrew-core needs)
