@@ -41,7 +41,8 @@ type Rule struct {
 	Requires      string            `yaml:"requires"`
 	Check         []string          `yaml:"check"`
 	Show          []string          `yaml:"show"`
-	SizeCmd       []string          `yaml:"size_cmd"`
+	SizeCmd       []string          `yaml:"size_cmd"`      // prints a path to measure
+	SizeTextCmd   []string          `yaml:"size_text_cmd"` // prints a size like "1.2GB"
 	Run           [][]string        `yaml:"run"`
 	Disabled      bool              `yaml:"disabled"`
 }

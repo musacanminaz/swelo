@@ -6,7 +6,8 @@
 # kind: path      fixed `paths` (~ and $UID expanded, globs ok); with `children: true`
 #                 each entry inside is an item (filters: name_glob, older_than_days,
 #                 skip_if_child, keep_latest per name prefix)
-# kind: command   runs `run` commands; `show` / `size_cmd` describe it in a dry run
+# kind: command   runs `run` commands; `show`, `size_cmd` (prints a path to measure)
+#                 and `size_text_cmd` (prints a size like "1.2GB") describe it in a dry run
 # risk: safe (default) | risky (--risky) | report (never deleted)
 # running: skip the rule while a process matching one of these is running
 # Artifact items are also skipped while any process has its working directory
@@ -190,6 +191,7 @@
   requires: docker
   check: [docker, info]
   show: [docker, system, df]
+  size_text_cmd: [docker, system, df, --format, '{{if eq .Type "Build Cache"}}{{.Reclaimable}}{{end}}']
   run:
     - [docker, builder, prune, -af]
     - [docker, image, prune, -af]

@@ -19,6 +19,7 @@ Plan: phases 1–7 (intro & safety → clean → analyze → uninstall → optim
 - [x] Per-project busy check (a process has its cwd in the project) instead of global "vite is running"
 - [x] Playwright MCP: a SingletonLock is only "in use" if its PID is alive
 - [x] Engine tests on a fake home; tests never run command rules or touch absolute paths
-- [ ] Translate skip reasons (currently English in TR output)
-- [ ] Docker: show reclaimable size instead of raw `docker system df`
+- [x] Skip reasons translated (`i18n.Reason`)
+- [x] Docker: reclaimable build cache size via `size_text_cmd`
+- [x] Security: git runs with fsmonitor/hooks disabled (hostile .git/config cannot execute); roots outside home must be owned by the user, not symlinks, not group/world-writable
 - [ ] v0.1.0 release (goreleaser, musacanminaz/homebrew-tap)

@@ -168,13 +168,13 @@ func printResult(w io.Writer, r clean.Result, top int, o cleanOpts, home string)
 		count = fmt.Sprintf(" · %d", len(r.Items))
 	}
 	size := ui.Bytes(r.Size)
-	if r.Rule.Kind == "command" && r.Size == 0 {
+	if r.Rule.Kind == "command" && r.Size == 0 && len(r.Rule.SizeCmd) == 0 && len(r.Rule.SizeTextCmd) == 0 {
 		size = "" // size unknown until the command runs
 	}
 	fmt.Fprintf(w, "\n %s %s%s — %s  %s%s\n", mark, ui.Bold(r.Rule.ID), tag, r.Rule.Description(i18n.Lang()),
 		ui.Bold(size), ui.Dim(count))
 	if r.Note != "" {
-		fmt.Fprintf(w, "     %s\n", ui.Dim(r.Note))
+		fmt.Fprintf(w, "     %s\n", ui.Dim(i18n.Reason(r.Note)))
 	}
 	if r.Show != "" {
 		show := r.Show
@@ -206,13 +206,13 @@ func skipSummary(skips []clean.Item, all bool, home string) string {
 	if all {
 		var lines []string
 		for _, s := range skips {
-			lines = append(lines, fmt.Sprintf("%s %s (%s)", i18n.T("skipped"), short(s.Path, home), s.Skip))
+			lines = append(lines, fmt.Sprintf("%s %s (%s)", i18n.T("skipped"), short(s.Path, home), i18n.Reason(s.Skip)))
 		}
 		return strings.Join(lines, "\n     ")
 	}
 	counts := map[string]int{}
 	for _, s := range skips {
-		counts[s.Skip]++
+		counts[i18n.Reason(s.Skip)]++
 	}
 	var parts []string
 	for reason, c := range counts {

@@ -74,7 +74,7 @@ func New(home string, rs []rules.Rule, cfg rules.Config) *Engine {
 				if !r.Children {
 					root = filepath.Dir(m)
 				}
-				if root != home && root != "/" {
+				if root != home && root != "/" && trustedRoot(root, home) {
 					roots = append(roots, root)
 				}
 			}
@@ -361,6 +361,11 @@ func (e *Engine) command(res *Result) {
 		out, _ := run(r.Show, 30*time.Second)
 		res.Show = strings.TrimRight(out, "\n")
 	}
+	if len(r.SizeTextCmd) > 0 {
+		if out, err := run(r.SizeTextCmd, 30*time.Second); err == nil {
+			res.Size = ParseSize(out)
+		}
+	}
 	if len(r.SizeCmd) > 0 {
 		if out, err := run(r.SizeCmd, 15*time.Second); err == nil {
 			if p := strings.TrimSpace(out); p != "" {
@@ -534,3 +539,31 @@ func lockHeld(p string) bool {
 	}
 	return syscall.Kill(pid, 0) == nil || syscall.Kill(pid, 0) == syscall.EPERM
 }
+
+// trustedRoot rejects roots outside home (e.g. /private/tmp/claude-$UID) unless
+// they are real directories owned by this user and writable only by them, so
+// another user cannot plant a symlink or folder there for swelo to delete.
+func trustedRoot(root, home string) bool {
+	if strings.HasPrefix(root, home+"/") {
+		return true
+	}
+	info, err := os.Lstat(root)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0o022 != 0 {
+		return false
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	return ok && int(st.Uid) == os.Getuid()
+}
+
+// ParseSize reads the first size in s, e.g. "1.2GB (100%)" or "512kB"; 0 if none.
+func ParseSize(s string) int64 {
+	m := sizeRe.FindStringSubmatch(s)
+	if m == nil {
+		return 0
+	}
+	n, _ := strconv.ParseFloat(m[1], 64)
+	mult := map[string]float64{"": 1, "B": 1, "K": 1e3, "M": 1e6, "G": 1e9, "T": 1e12}[strings.ToUpper(m[2])]
+	return int64(n * mult)
+}
+
+var sizeRe = regexp.MustCompile(`([0-9]+(?:\.[0-9]+)?)\s*([kKMGT]?)i?B`)

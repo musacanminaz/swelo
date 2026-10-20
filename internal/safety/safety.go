@@ -150,8 +150,13 @@ func (g *Guard) recent(project, skip string) bool {
 	return false
 }
 
+// gitTracked runs git with repository-controlled executables disabled, so a
+// hostile .git/config (fsmonitor, hooks) cannot run code during the scan.
 func gitTracked(dir, rel string) bool {
-	out, err := exec.Command("git", "-C", dir, "ls-files", "--", rel).Output()
+	cmd := exec.Command("git", "-c", "core.fsmonitor=", "-c", "core.hooksPath=/dev/null",
+		"-c", "core.untrackedCache=false", "--no-optional-locks", "-C", dir, "ls-files", "--", rel)
+	cmd.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_TERMINAL_PROMPT=0")
+	out, err := cmd.Output()
 	return err == nil && len(strings.TrimSpace(string(out))) > 0
 }
 

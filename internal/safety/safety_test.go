@@ -146,3 +146,19 @@ func TestRefusals(t *testing.T) {
 		t.Fatal("tracked dist was deleted")
 	}
 }
+
+func TestGitFsmonitorNotExecuted(t *testing.T) {
+	g, projects := setup(t)
+	repo := filepath.Join(projects, "evil")
+	oldProject(t, repo)
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+	exec.Command("git", "-C", repo, "add", "package.json").Run() // fsmonitor only fires with a non-empty index
+	marker := filepath.Join(g.Home, "pwned")
+	exec.Command("git", "-C", repo, "config", "core.fsmonitor", "touch "+marker).Run()
+	g.Check(filepath.Join(repo, "node_modules"), repo)
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("core.fsmonitor from the repo config was executed")
+	}
+}

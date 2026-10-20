@@ -173,3 +173,30 @@ func sandboxed(t *testing.T, rs []rules.Rule, home string) []rules.Rule {
 	}
 	return out
 }
+
+func TestTrustedRoot(t *testing.T) {
+	home, _ := filepath.EvalSymlinks(t.TempDir())
+	other, _ := filepath.EvalSymlinks(t.TempDir())
+	own := filepath.Join(other, "own")
+	os.Mkdir(own, 0o755)
+	shared := filepath.Join(other, "shared")
+	os.Mkdir(shared, 0o777)
+	os.Chmod(shared, 0o777)
+	link := filepath.Join(other, "link")
+	os.Symlink(own, link)
+
+	if !trustedRoot(filepath.Join(home, "x"), home) || !trustedRoot(own, home) {
+		t.Error("own directories must be trusted")
+	}
+	if trustedRoot(shared, home) || trustedRoot(link, home) {
+		t.Error("world-writable dirs and symlinks must not be trusted")
+	}
+}
+
+func TestParseSize(t *testing.T) {
+	for in, want := range map[string]int64{"1.2GB (100%)": 1.2e9, "0B": 0, "512kB": 512e3, "17.91MB (87%)": 17.91e6, "": 0} {
+		if got := ParseSize(in); got != want {
+			t.Errorf("ParseSize(%q) = %d, want %d", in, got, want)
+		}
+	}
+}
