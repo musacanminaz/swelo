@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/musacanminaz/swelo/internal/i18n"
+	"github.com/musacanminaz/swelo/internal/perm"
 )
 
 // SudoStep is one action that needs root. It is always shown in full and
@@ -94,6 +95,7 @@ func GrantSudo() error {
 	}
 	session.Lock()
 	defer session.Unlock()
+	perm.SetSudoSession(true)
 	if session.stop == nil {
 		stop := make(chan struct{})
 		session.stop = stop
@@ -127,6 +129,7 @@ func EndSudo() {
 		close(session.stop)
 		session.stop = nil
 	}
+	perm.SetSudoSession(false)
 	session.Unlock()
 	exec.Command("sudo", "-k").Run()
 }

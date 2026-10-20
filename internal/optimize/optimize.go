@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/musacanminaz/swelo/internal/clean"
+	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/ui"
 )
 
@@ -45,7 +46,7 @@ func Real(argv ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 	var buf bytes.Buffer
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd := perm.Isolate(exec.CommandContext(ctx, argv[0], argv[1:]...))
 	cmd.Stdout, cmd.Stderr = &buf, &buf
 	cmd.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_TERMINAL_PROMPT=0")
 	err := cmd.Run()

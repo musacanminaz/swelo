@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
+	"syscall"
 )
 
 // FullDiskAccess reports whether this process can read a TCC-protected file.
@@ -46,4 +48,24 @@ func ProtectedDirs(home string) []string {
 		filepath.Join(lib, "Biome"), filepath.Join(lib, "Suggestions"), filepath.Join(lib, "Metadata", "CoreSpotlight"),
 		filepath.Join(home, ".Trash"), filepath.Join(home, "Pictures", "Photos Library.photoslibrary"),
 	}
+}
+
+// sudoSession is set while the user has granted admin rights from the menu.
+var sudoSession atomic.Bool
+
+// SetSudoSession records whether sudo credentials are cached for this terminal.
+func SetSudoSession(on bool) { sudoSession.Store(on) }
+
+// Isolate starts cmd in a new session without a controlling terminal while
+// admin rights are granted. sudo caches credentials per terminal, so tools
+// swelo runs (brew, npm, docker, git and their scripts) cannot use them
+// silently; a sudo inside them fails instead of running as root.
+func Isolate(cmd *exec.Cmd) *exec.Cmd {
+	if sudoSession.Load() {
+		if cmd.SysProcAttr == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{}
+		}
+		cmd.SysProcAttr.Setsid = true
+	}
+	return cmd
 }

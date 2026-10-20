@@ -56,7 +56,7 @@ func NewEnv(home string, roots []string) *Env {
 		Home:  home,
 		Roots: roots,
 		Run: func(argv ...string) (string, error) {
-			out, err := exec.Command(argv[0], argv[1:]...).Output()
+			out, err := perm.Isolate(exec.Command(argv[0], argv[1:]...)).Output()
 			return string(out), err
 		},
 		Look:    func(name string) bool { _, err := exec.LookPath(name); return err == nil },

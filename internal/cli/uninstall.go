@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/musacanminaz/swelo/internal/i18n"
+	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/rules"
 	"github.com/musacanminaz/swelo/internal/ui"
 	"github.com/musacanminaz/swelo/internal/uninstall"
@@ -177,7 +178,7 @@ func reviewAndRemove(in *bufio.Reader, w io.Writer, chosen []uninstall.Package, 
 
 // runVisible runs a command attached to the terminal so its own prompts and output show.
 func runVisible(argv []string) error {
-	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd := perm.Isolate(exec.Command(argv[0], argv[1:]...))
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }
