@@ -9,8 +9,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/ui"
@@ -60,16 +63,34 @@ func TimeMachine(run Runner, dirs []string) Task {
 	if len(dirs) == 0 {
 		return t
 	}
+	var safe []string
+	for _, d := range dirs {
+		if !strings.ContainsFunc(d, unicode.IsControl) {
+			safe = append(safe, d)
+		}
+	}
+	dirs = safe
+	if len(dirs) == 0 {
+		return t
+	}
 	out, err := run(append([]string{"tmutil", "isexcluded"}, dirs...)...)
 	if err != nil {
 		t.Note = "tmutil isexcluded failed"
 		return t
 	}
+	// trust only paths we passed in; tmutil's output is matched against them
+	asked := map[string]bool{}
+	for _, d := range dirs {
+		asked[d] = true
+	}
 	for _, l := range strings.Split(out, "\n") {
 		if p, ok := strings.CutPrefix(strings.TrimSpace(l), "[Included]"); ok {
 			p = strings.TrimSpace(p)
-			t.Items = append(t.Items, p)
-			t.Size += clean.DirSize(p)
+			if asked[p] {
+				t.Items = append(t.Items, p)
+				t.Size += clean.DirSize(p)
+				delete(asked, p)
+			}
 		}
 	}
 	t.Ready = len(t.Items) > 0
@@ -93,6 +114,9 @@ func Git(run Runner, repos []string, minSize int64, busy func(string) bool) Task
 		if busy != nil && busy(r) {
 			continue
 		}
+		if !ownedByUser(g) || unsafeConfig(run, r) {
+			continue // another user's repo, or its config can run commands
+		}
 		if size := clean.DirSize(g); size >= minSize {
 			picked = append(picked, r)
 			t.Items = append(t.Items, r)
@@ -105,7 +129,8 @@ func Git(run Runner, repos []string, minSize int64, busy func(string) bool) Task
 		for _, r := range picked {
 			before += clean.DirSize(filepath.Join(r, ".git"))
 			// repo-controlled executables stay disabled (see safety.gitTracked)
-			base := []string{"git", "-c", "core.fsmonitor=", "-c", "core.hooksPath=/dev/null", "-C", r}
+			base := []string{"git", "-c", "core.fsmonitor=", "-c", "core.hooksPath=/dev/null",
+				"-c", "gc.recentObjectsHook=", "-c", "gc.autoDetach=false", "-C", r}
 			if out, err := run(append(base, "gc", "--quiet")...); err != nil {
 				return out, err
 			}
@@ -160,4 +185,31 @@ func FindRepos(roots []string, skip map[string]bool) []string {
 		})
 	}
 	return repos
+}
+
+// commandKeys are git config keys that can make git run a program.
+var commandKeys = regexp.MustCompile(`(?i)(hook|command|cmd|program|fsmonitor|editor|pager|askpass|^include\.|^includeif\.|^filter\.|^alias\.|^credential\.)`)
+
+// unsafeConfig reports whether the repository's own config sets any key that
+// could execute a command (or pulls in other config files).
+func unsafeConfig(run Runner, repo string) bool {
+	out, err := run("git", "-C", repo, "config", "--local", "--name-only", "--list")
+	if err != nil {
+		return true
+	}
+	for _, k := range strings.Fields(out) {
+		if commandKeys.MatchString(k) {
+			return true
+		}
+	}
+	return false
+}
+
+func ownedByUser(p string) bool {
+	info, err := os.Stat(p)
+	if err != nil {
+		return false
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	return ok && int(st.Uid) == os.Getuid()
 }

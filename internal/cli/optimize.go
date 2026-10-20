@@ -61,8 +61,10 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes bool, on
 		if r.Rule.Risk == rules.Report || r.Rule.Kind == "command" {
 			continue
 		}
-		for _, it := range append(append([]clean.Item{}, r.Items...), r.Skips...) {
-			regen = append(regen, it.Path)
+		for _, it := range r.Items { // only what passed the safety gate, never skipped items
+			if eng.Guard.Check(it.Path, it.Project) == nil {
+				regen = append(regen, it.Path)
+			}
 		}
 	}
 	var roots []string

@@ -20,7 +20,7 @@ func TestTimeMachine(t *testing.T) {
 		case "destinationinfo":
 			return "Name: Backup\n", nil
 		case "isexcluded":
-			return "[Excluded]  " + a + "\n[Included]  " + b + "\n", nil
+			return "[Excluded]  " + a + "\n[Included]  " + b + "\n[Included]  /Users/x/Documents\n", nil
 		}
 		return "", nil
 	}
@@ -40,23 +40,28 @@ func TestTimeMachine(t *testing.T) {
 
 func TestGitAndBrew(t *testing.T) {
 	root := t.TempDir()
-	repo, locked, busy := filepath.Join(root, "repo"), filepath.Join(root, "locked"), filepath.Join(root, "busy")
-	for _, r := range []string{repo, locked, busy} {
+	repo, locked, busy, evil := filepath.Join(root, "repo"), filepath.Join(root, "locked"), filepath.Join(root, "busy"), filepath.Join(root, "evil")
+	for _, r := range []string{repo, locked, busy, evil} {
 		os.MkdirAll(r, 0o755)
 		if out, err := exec.Command("git", "-C", r, "init", "-q").CombinedOutput(); err != nil {
 			t.Fatal(err, string(out))
 		}
 	}
 	os.WriteFile(filepath.Join(locked, ".git", "index.lock"), nil, 0o644)
+	marker := filepath.Join(root, "pwned")
+	exec.Command("git", "-C", evil, "config", "gc.recentObjectsHook", "touch "+marker).Run()
 	os.MkdirAll(filepath.Join(root, "app", "node_modules", "dep", ".git"), 0o755)
 
 	repos := FindRepos([]string{root}, map[string]bool{"node_modules": true})
-	if len(repos) != 3 {
+	if len(repos) != 4 {
 		t.Fatalf("repos = %v (must not descend into node_modules)", repos)
 	}
 	task := Git(Real, repos, 1, func(d string) bool { return d == busy })
 	if len(task.Items) != 1 || task.Items[0] != repo {
-		t.Fatalf("git items = %v (locked and busy repos must be skipped)", task.Items)
+		t.Fatalf("git items = %v (locked, busy and hostile-config repos must be skipped)", task.Items)
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("a repo config hook was executed")
 	}
 	if _, err := task.Apply(); err != nil {
 		t.Fatalf("git gc on a fresh repo: %v", err)
