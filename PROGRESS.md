@@ -93,7 +93,7 @@ Add:
 - [x] Docker: memory limit vs RAM (settings read only with Full Disk Access), CPUs, Resource Saver, running containers with live CPU/memory, idle ones listed with the `docker stop` line; advice when Docker may take ≥ 40 % of RAM
 - [x] Homebrew services kept running: listed; menu/--stop ticks → `brew services stop` after confirmation (undo shown)
 ## Phase 11b — startup items and leftovers (v0.8.0)
-- [ ] launch agents/daemons mapped to apps; orphans and updaters flagged; user agents bootout (undo: bootstrap), system daemons as sudo steps
+- [x] `swelo startup` + menu: ~/Library and /Library LaunchAgents and LaunchDaemons (non-Apple) with app, running pid, KeepAlive; flags: app gone, empty plist left by an uninstaller, updater, already disabled. `--pick`/menu: tick → `launchctl bootout` + `disable` for this user (undo line shown and logged), daemons as separate sudo steps. Here: 51 jobs, 13 orphans, 20 updaters
 - [ ] app leftovers in ~/Library whose app is gone: report, tick → Trash
 ## Phase 12 — more cleaning (v0.9.0)
 - [ ] Trash (--risky, > 30 days) and APFS local snapshots (report; delete = sudo step)

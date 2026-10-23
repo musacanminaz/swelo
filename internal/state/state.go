@@ -17,6 +17,8 @@ type Record struct {
 	Path      string    `json:"path,omitempty"`
 	Rule      string    `json:"rule,omitempty"`
 	Uninstall string    `json:"uninstall,omitempty"`
+	Startup   string    `json:"startup,omitempty"` // a launchd job turned off
+	Undo      string    `json:"undo,omitempty"`
 	Bytes     int64     `json:"bytes"`
 	OK        *bool     `json:"ok,omitempty"`
 }

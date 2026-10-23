@@ -151,6 +151,9 @@ func runHistory(w io.Writer, home, dir string, n int) {
 		if r.Uninstall != "" {
 			what, kind = r.Uninstall, "uninstall"
 		}
+		if r.Startup != "" {
+			what, kind = r.Startup, "startup"
+		}
 		mark := ui.Green("✓")
 		if !r.Succeeded() {
 			mark = ui.Red("✗")
