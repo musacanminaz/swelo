@@ -14,10 +14,11 @@ import (
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
+	"github.com/musacanminaz/swelo/internal/state"
 	"github.com/musacanminaz/swelo/internal/ui"
 )
 
-var menuIDs = []string{"clean", "analyze", "tree", "uninstall", "optimize", "status", "history", "permissions", "lang", "quit"}
+var menuIDs = []string{"quick", "clean", "analyze", "tree", "uninstall", "optimize", "status", "history", "permissions", "lang", "quit"}
 
 // runMenu is what `swelo` opens on a terminal: pick a command with the arrow
 // keys, it runs in its interactive form (pick lists, menu confirmations), then
@@ -47,6 +48,8 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 		}
 		var err error
 		switch menuIDs[choice] {
+		case "quick":
+			err = runClean(in, w, home, cleanOpts{apply: true, quick: true, recentDays: -1}, true)
 		case "clean":
 			err = runClean(in, w, home, cleanOpts{pick: true, recentDays: -1}, true)
 		case "analyze":
@@ -97,8 +100,34 @@ func menuHeader(w io.Writer, home string) {
 		fda += " · " + ui.Green(i18n.T("menu.sudo.yes"))
 	}
 	fmt.Fprintf(w, "\n %s %s — %s\n", ui.Bold("swelo"), Version, i18n.T("tagline"))
-	fmt.Fprintf(w, " %s %s  %s / %s · %s %s · %s\n\n", i18n.T("disk"), bar, ui.Bytes(total-free), ui.Bytes(total),
+	fmt.Fprintf(w, " %s %s  %s / %s · %s %s · %s\n", i18n.T("disk"), bar, ui.Bytes(total-free), ui.Bytes(total),
 		ui.Bold(ui.Bytes(free)), i18n.T("menu.free"), fda)
+	fmt.Fprintf(w, " %s\n\n", ui.Dim(lastCleanup(state.History(stateDir()))))
+}
+
+// lastCleanup: when swelo last deleted something and how much that day.
+func lastCleanup(hist []state.Record) string {
+	var last time.Time
+	var bytes int64
+	for _, r := range hist {
+		if !r.Succeeded() {
+			continue
+		}
+		if day := r.Time.Local().Format("2006-01-02"); day != last.Local().Format("2006-01-02") {
+			if r.Time.Before(last) {
+				continue
+			}
+			bytes = 0
+		}
+		if !r.Time.Before(last) {
+			last = r.Time
+		}
+		bytes += r.Bytes
+	}
+	if last.IsZero() {
+		return i18n.T("menu.last.none")
+	}
+	return fmt.Sprintf(i18n.T("menu.last"), ago(last), ui.Bytes(bytes))
 }
 
 func endSudo() {

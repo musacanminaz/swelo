@@ -75,8 +75,8 @@ Add:
 - [x] picker: a rule row expands with → (← closes) into its items; single items can be unticked ([-] = some), sizes shown per row and summed in the header
 - [x] picker keys: a all, n none (visible rows), / filter on label/detail/group (Enter keeps, Esc clears), PgUp/PgDn/Home/End
 - [x] uninstall --pick without --only asks the kind first (Everything / apps / Homebrew / …); only that provider is scanned
-- [ ] menu "Quick clean": safe rules, one confirmation, no picker
-- [ ] menu header: last cleanup ("3 days ago, 5.1 GB")
+- [x] menu "Quick clean": safe rules, one menu confirmation (default No), no picker
+- [x] menu header: last cleanup ("last cleanup 2 days ago · 5.1 GB")
 ## Phase 9 — CLI style (v0.6.0)
 - [ ] `--json` for clean, analyze, uninstall, status; exit codes 0 ok / 1 error / 2 cancelled
 - [ ] `swelo rules`; `swelo clean node docker` shortcut for --only

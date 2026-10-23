@@ -21,6 +21,7 @@ import (
 
 type cleanOpts struct {
 	apply, risky, yes, all, pick bool
+	quick                        bool // menu "Quick clean": safe rules, one menu confirmation
 	only                         []string
 	recentDays                   int
 }
@@ -129,7 +130,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 		fmt.Fprintf(w, " %s\n\n", ui.Dim(i18n.T("hint.apply")))
 		return nil
 	}
-	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("confirm.delete"), ui.Bytes(total)), o.pick) {
+	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("confirm.delete"), ui.Bytes(total)), o.pick || o.quick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 		return nil
 	}
