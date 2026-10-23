@@ -14,6 +14,7 @@ var reasonsTR = map[string]string{
 	"moves the app and its leftovers to the Trash": "uygulamayı ve artıklarını Çöp'e taşır",
 	"moves the app to the Trash":                   "uygulamayı Çöp'e taşır",
 	"owned by root: moved to the Trash with sudo":  "root'a ait: sudo ile Çöp'e taşınır",
+	"app is gone":                                  "uygulaması silinmiş",
 	"running — quit it first":                      "çalışıyor — önce kapatın",
 	"not an absolute path":                         "mutlak yol değil",
 	"does not exist":                               "yok",

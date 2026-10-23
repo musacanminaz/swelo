@@ -92,9 +92,9 @@ Add:
 - [x] forgotten developer processes: dev runtimes whose cwd is in the Trash or gone, idle Gradle/Kotlin daemons (CPU < 1 %), Playwright/MCP browsers and headless runs > 1 day, MCP servers whose parent died; helpers folded into their root; own processes only. `speed --stop` / menu: tick → SIGTERM, still-running ones reported, never SIGKILL. Claude Code sessions are not offered (they are live terminal tabs here)
 - [x] Docker: memory limit vs RAM (settings read only with Full Disk Access), CPUs, Resource Saver, running containers with live CPU/memory, idle ones listed with the `docker stop` line; advice when Docker may take ≥ 40 % of RAM
 - [x] Homebrew services kept running: listed; menu/--stop ticks → `brew services stop` after confirmation (undo shown)
-## Phase 11b — startup items and leftovers (v0.8.0)
+## Phase 11b — startup items and leftovers (v0.8.0) — released 2026-10-23
 - [x] `swelo startup` + menu: ~/Library and /Library LaunchAgents and LaunchDaemons (non-Apple) with app, running pid, KeepAlive; flags: app gone, empty plist left by an uninstaller, updater, already disabled. `--pick`/menu: tick → `launchctl bootout` + `disable` for this user (undo line shown and logged), daemons as separate sudo steps. Here: 51 jobs, 13 orphans, 20 updaters
-- [ ] app leftovers in ~/Library whose app is gone: report, tick → Trash
+- [x] leftovers of removed apps as an uninstall provider (`--only leftover`, menu kind "Leftovers…"): ~/Library entries named by a bundle id no installed app carries, that Spotlight cannot find and nothing touched for 30 days; one package per id, removal = `/usr/bin/trash` of all its folders. Here: Teams 1.2 GB, Spark 736 MB, Adobe, OneDrive, UTM…
 ## Phase 12 — more cleaning (v0.9.0)
 - [ ] Trash (--risky, > 30 days) and APFS local snapshots (report; delete = sudo step)
 - [ ] simulator devices unused 90 days (--risky), erase option

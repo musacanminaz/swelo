@@ -82,6 +82,7 @@ type Provider struct {
 // Providers in display order.
 var Providers = []Provider{
 	{"app", apps},
+	{"leftover", leftovers},
 	{"simruntime", simRuntimes},
 	{"android", androidSDK},
 	{"brew", brew},
