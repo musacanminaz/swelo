@@ -43,7 +43,7 @@ func Execute() error {
 	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, "machine-readable output: one JSON document, no prompts (clean --apply needs --yes)")
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
-	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
+	root.AddCommand(permissionsCmd(), rulesCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
 	return root.Execute()
 }
 
@@ -79,7 +79,7 @@ func welcome(w io.Writer) {
 	cmds := []struct {
 		name  string
 		ready bool
-	}{{"analyze", true}, {"clean", true}, {"optimize", true}, {"uninstall", true}, {"status", true}, {"permissions", true}}
+	}{{"analyze", true}, {"clean", true}, {"optimize", true}, {"uninstall", true}, {"status", true}, {"rules", true}, {"permissions", true}}
 	for _, c := range cmds {
 		soon := ""
 		if !c.ready {

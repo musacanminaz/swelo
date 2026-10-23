@@ -31,9 +31,11 @@ type cleanOpts struct {
 func cleanCmd() *cobra.Command {
 	var o cleanOpts
 	c := &cobra.Command{
-		Use:   "clean",
+		Use:   "clean [rule or group ...]",
 		Short: i18n.T("cmd.clean"),
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Args:  cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o.only = append(o.only, args...)
 			if jsonFlag {
 				o.json = cmd.OutOrStdout()
 				return runClean(bufio.NewReader(os.Stdin), io.Discard, home(), o, false)
@@ -47,7 +49,7 @@ func cleanCmd() *cobra.Command {
 	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")
 	f.BoolVar(&o.all, "all", false, "list every item, not only the largest")
 	f.BoolVar(&o.pick, "pick", false, "choose what to delete interactively")
-	f.StringSliceVar(&o.only, "only", nil, "only these rule ids or groups (build, cache, docker, tools)")
+	f.StringSliceVar(&o.only, "only", nil, "only these rule ids or groups (same as naming them after clean; swelo rules lists them)")
 	f.IntVar(&o.recentDays, "recent-days", -1, "skip projects changed within N days (0 = off; default from config, 7)")
 	return c
 }
@@ -65,6 +67,11 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 		cfg.RecentDays = &o.recentDays
 	}
 	if len(o.only) > 0 {
+		for _, only := range o.only {
+			if !knownRule(rs, only) {
+				return fmt.Errorf(i18n.T("clean.unknownrule"), only)
+			}
+		}
 		for i := range rs {
 			rs[i].Disabled = !matchesOnly(rs[i], o.only)
 		}

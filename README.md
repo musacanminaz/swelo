@@ -27,7 +27,8 @@ confirmed, and `sudo -k` runs when swelo quits) and opens the Full Disk Access s
 |---|---|---|
 | `swelo` | Opens a menu on a terminal: Quick clean (safe rules, one confirmation), Clean (tick rules, open a rule with → to keep single items), Analyze, Folder tree, Uninstall (pick a kind, then tick), Optimize, Status, History, Permissions (grant admin rights for the session, open Full Disk Access). Pick lists: space ticks, `a`/`n` all/none, `/` filters. Prints the overview when not on a terminal | ✅ |
 | `swelo permissions` | Every permission (Full Disk Access, sudo) explained | ✅ |
-| `swelo clean` | Clean regenerable files; dry run unless `--apply`, `--pick` to tick rules | ✅ |
+| `swelo clean [rule …]` | Clean regenerable files; dry run unless `--apply`, `--pick` to tick rules; name rules or groups to run only those (`swelo clean node docker`) | ✅ |
+| `swelo rules` | Every rule by group: risk, id, what it looks at, whether the config disabled it | ✅ |
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
 | `swelo uninstall` | Lists apps (with their ~/Library leftovers) and developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <name>` uninstalls with each tool's own command after showing it | ✅ |
 | `swelo optimize` | Time Machine exclusions for regenerable folders, `git gc` on large repos, `brew autoremove` (dry run unless `--apply`, `--pick` to tick tasks) | ✅ |
@@ -53,7 +54,7 @@ Prebuilt binaries are on the [releases page](https://github.com/musacanminaz/swe
 swelo                      # menu: Quick clean, Clean (tick), Analyze, Uninstall …
 swelo clean                # dry run: lists what can be freed, deletes nothing
 swelo clean --apply        # deletes the 🟢 items after you confirm
-swelo clean --apply --risky --only docker,tools
+swelo clean docker tools --apply --risky   # only these rules/groups
 ```
 
 What `clean` looks at:

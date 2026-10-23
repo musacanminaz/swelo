@@ -80,7 +80,7 @@ Add:
 ## Phase 9 — CLI style (v0.6.0)
 - [x] `--json` (global flag) for clean and status; exit codes 0 ok / 1 error / 2 cancelled (ErrCancelled; the menu ignores it)
 - [x] `--json` for analyze (every category, big files, projects, skipped protected folders) and uninstall (list only; --pick/--remove refuse it)
-- [ ] `swelo rules`; `swelo clean node docker` shortcut for --only
+- [x] `swelo rules` (by group: risk, id, what it looks at, disabled-in-config; --json); `swelo clean node docker` = --only; unknown ids are an error
 - [ ] `swelo config` (set lang, roots add, edit); menu language choice saved
 - [ ] shell completions installed by the brew formula
 - [ ] flag descriptions localized (--lang tr)
