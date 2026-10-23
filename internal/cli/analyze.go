@@ -159,11 +159,38 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 			}
 			fmt.Fprintf(w, "   %9s  %s\n", ui.Bytes(f.Size), short(f.Path, home))
 		}
+		printStaleFiles(w, res.BigFiles, top, home)
 	}
 
 	printProjects(w, projectRows(results, rs), top, home)
 	fmt.Fprintf(w, "\n %s\n\n", ui.Dim(i18n.T("analyze.next")))
 	return nil
+}
+
+// staleAge: a big file untouched this long is worth a look (report only).
+const staleAge = 180 * 24 * time.Hour
+
+// printStaleFiles lists the big files nobody opened or changed for half a
+// year, backup folders excluded; nothing is deleted.
+func printStaleFiles(w io.Writer, files []analyze.File, top int, home string) {
+	now := time.Now()
+	var stale []analyze.File
+	for _, f := range files {
+		if f.Stale(now, staleAge) {
+			stale = append(stale, f)
+		}
+	}
+	if len(stale) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\n %s %s\n", ui.Bold(i18n.T("analyze.stale")), ui.Dim(i18n.T("analyze.stale.note")))
+	for i, f := range stale {
+		if i == top {
+			fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("more.top"), len(stale)-top)))
+			break
+		}
+		fmt.Fprintf(w, "   %9s  %s %s\n", ui.Bytes(f.Size), ui.Pad(short(f.Path, home), 60), ui.Dim(fmt.Sprintf(i18n.T("days.ago"), int(now.Sub(f.Used).Hours()/24))))
+	}
 }
 
 // analyzeDoc is the --json form of the report (every category, no top cut-off).
@@ -178,8 +205,9 @@ func analyzeDoc(res analyze.Result, results []clean.Result, freeable map[string]
 	if alloc, maxSize, ok := dockerRaw(home, docker); ok {
 		doc.DockerImage = &jsonDocker{alloc, maxSize}
 	}
+	now := time.Now()
 	for _, f := range res.BigFiles {
-		doc.BigFiles = append(doc.BigFiles, jsonFile{f.Path, f.Size})
+		doc.BigFiles = append(doc.BigFiles, jsonFile{f.Path, f.Size, f.Used, f.Stale(now, staleAge)})
 	}
 	for _, r := range projectRows(results, rs) {
 		doc.Projects = append(doc.Projects, jsonProject{r.dir, r.size, r.changed})

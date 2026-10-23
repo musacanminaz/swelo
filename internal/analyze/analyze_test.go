@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/musacanminaz/swelo/internal/perm"
 )
@@ -50,5 +51,23 @@ func TestScan(t *testing.T) {
 	full := Scan(Options{Home: home, Categories: cats, Protected: perm.ProtectedDirs(home), Full: true})
 	if full.Sizes["library"] < 1<<20 {
 		t.Errorf("--full must read protected folders: %v", full.Sizes)
+	}
+}
+
+func TestFileStale(t *testing.T) {
+	now := time.Now()
+	old := now.AddDate(0, 0, -200)
+	cases := map[File]bool{
+		{Path: "/h/movie.mkv", Size: 2e9, Used: old}:                    true,
+		{Path: "/h/movie.mkv", Size: 2e9, Used: now.AddDate(0, 0, -10)}: false,
+		{Path: "/h/Backups/db.dump", Size: 2e9, Used: old}:              false,
+		{Path: "/h/02-DB-Yedekler/x.sql", Size: 2e9, Used: old}:         true, // "02-DB-Yedekler" is not exactly a backup folder name
+		{Path: "/h/yedek/x", Size: 2e9, Used: old}:                      false,
+		{Path: "/h/x", Size: 2e9}:                                       false, // unknown age
+	}
+	for f, want := range cases {
+		if got := f.Stale(now, 180*24*time.Hour); got != want {
+			t.Errorf("%s used %v: stale=%v, want %v", f.Path, f.Used, got, want)
+		}
 	}
 }

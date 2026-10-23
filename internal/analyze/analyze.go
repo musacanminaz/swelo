@@ -5,11 +5,13 @@ package analyze
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 )
 
 // Category groups paths under one name. The longest matching prefix wins.
@@ -30,6 +32,24 @@ type Result struct {
 type File struct {
 	Path string
 	Size int64
+	Used time.Time // the later of last access and last change
+}
+
+// Stale: not opened or changed for a long time, and not in a backup folder
+// (those are big and old on purpose).
+func (f File) Stale(now time.Time, age time.Duration) bool {
+	return !f.Used.IsZero() && now.Sub(f.Used) > age && !backupPath(f.Path)
+}
+
+var backupDir = regexp.MustCompile(`(?i)^(backups?|yedek(ler)?|archives?|arşiv)$`)
+
+func backupPath(p string) bool {
+	for _, part := range strings.Split(p, "/") {
+		if backupDir.MatchString(part) {
+			return true
+		}
+	}
+	return false
 }
 
 // Options for Scan.
@@ -147,7 +167,11 @@ func (s *scanner) walk(dir, cat string) {
 			nfiles++
 			if s.o.BigFile > 0 && size >= s.o.BigFile {
 				s.mu.Lock()
-				s.res.BigFiles = append(s.res.BigFiles, File{p, size})
+				used := time.Unix(st.Atimespec.Sec, st.Atimespec.Nsec)
+				if m := time.Unix(st.Mtimespec.Sec, st.Mtimespec.Nsec); m.After(used) {
+					used = m
+				}
+				s.res.BigFiles = append(s.res.BigFiles, File{p, size, used})
 				s.mu.Unlock()
 			}
 		}

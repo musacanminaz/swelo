@@ -88,8 +88,10 @@ type jsonCategory struct {
 }
 
 type jsonFile struct {
-	Path  string `json:"path"`
-	Bytes int64  `json:"bytes"`
+	Path  string    `json:"path"`
+	Bytes int64     `json:"bytes"`
+	Used  time.Time `json:"last_used"` // later of access and change
+	Stale bool      `json:"stale"`     // untouched for 180 days, outside backup folders
 }
 
 type jsonProject struct {
