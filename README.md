@@ -67,7 +67,7 @@ What `clean` looks at:
 | Risk | Rules |
 |---|---|
 | 🟢 safe (default) | node_modules / .next / dist / … (only next to package.json), Flutter build + .dart_tool, Pods, .venv / .tox, Rust and Maven target, Gradle build (Java, Kotlin, Android), sbt target (Scala), .NET bin/obj, Swift .build, Elixir _build/deps, Haskell .stack-work, Zig caches, CLion cmake-build-*, .terraform, package manager caches (npm, Yarn, pip, Poetry, CocoaPods, Deno, Bun, Cargo, Composer, SwiftPM), Go build cache, Gradle, Xcode DerivedData, VS Code caches, browser caches (browser closed), old Playwright browsers, closed Playwright MCP profiles, crash reports > 30 days, Docker build cache + unused images, `brew cleanup`, `pnpm store prune`, `uv cache clean` |
-| 🟡 `--risky` | Items in the Trash for over 30 days (by the date they were trashed), Docker containers stopped > 7 days, Dart pub cache, Go module cache, Maven repository, NuGet cache, PHP vendor (with composer.lock), Unity Library/Temp, old Android build-tools, unavailable iOS simulators |
+| 🟡 `--risky` | Items in the Trash for over 30 days (by the date they were trashed), Xcode archives and device symbol files older than 90 days, Docker containers stopped > 7 days, Dart pub cache, Go module cache, Maven repository, NuGet cache, PHP vendor (with composer.lock), Unity Library/Temp, old Android build-tools, unavailable iOS simulators |
 | ⚪ report only | WhatsApp / Telegram data, Xcode archives, simulator devices, Downloads, Trash |
 
 Always skipped: git-tracked files, projects changed in the last 7 days (in the menu they get their
