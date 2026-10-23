@@ -21,7 +21,7 @@ import (
 	"github.com/musacanminaz/swelo/internal/ui"
 )
 
-var menuIDs = []string{"quick", "clean", "analyze", "tree", "uninstall", "optimize", "speed", "startup", "status", "history", "permissions", "lang", "quit"}
+var menuIDs = []string{"quick", "clean", "analyze", "tree", "dupes", "uninstall", "optimize", "speed", "startup", "status", "history", "permissions", "lang", "quit"}
 
 // runMenu is what `swelo` opens on a terminal: pick a command with the arrow
 // keys, it runs in its interactive form (pick lists, menu confirmations), then
@@ -59,6 +59,9 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 			err = runClean(in, w, home, cleanOpts{pick: true, recentDays: -1}, true)
 		case "analyze":
 			err = runAnalyze(in, w, home, false, 10, true, nil)
+		case "dupes":
+			defer clean.ForgetSizes()
+			err = runDupes(in, w, home, home, false, true, nil)
 		case "tree":
 			defer clean.ForgetSizes() // the tree can move things to the Trash
 			err = runTree(in, w, home, home, false)

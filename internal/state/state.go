@@ -87,3 +87,17 @@ func readLines(path string, fn func([]byte)) {
 		fn(sc.Bytes())
 	}
 }
+
+// Log appends r to the history file (Time filled in when zero).
+func Log(path string, r Record) {
+	if r.Time.IsZero() {
+		r.Time = time.Now()
+	}
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	json.NewEncoder(f).Encode(r)
+}

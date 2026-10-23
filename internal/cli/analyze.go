@@ -20,18 +20,24 @@ import (
 )
 
 func analyzeCmd() *cobra.Command {
-	var full, browse bool
+	var full, browse, dupes bool
 	var top int
 	c := &cobra.Command{
 		Use:   "analyze [folder]",
 		Short: i18n.T("cmd.analyze"),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if browse || len(args) == 1 {
-				dir := home()
-				if len(args) == 1 {
-					dir = args[0]
+			dir := home()
+			if len(args) == 1 {
+				dir = args[0]
+			}
+			if dupes {
+				if jsonFlag {
+					return runDupes(bufio.NewReader(os.Stdin), io.Discard, home(), dir, full, false, cmd.OutOrStdout())
 				}
+				return runDupes(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), dir, full, stdinIsTerminal(), nil)
+			}
+			if browse || len(args) == 1 {
 				return runTree(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), dir, full)
 			}
 			if jsonFlag {
@@ -42,6 +48,7 @@ func analyzeCmd() *cobra.Command {
 	}
 	c.Flags().BoolVar(&full, "full", false, i18n.T("flag.analyze.full"))
 	c.Flags().BoolVar(&browse, "tree", false, i18n.T("flag.analyze.tree"))
+	c.Flags().BoolVar(&dupes, "dupes", false, i18n.T("flag.analyze.dupes"))
 	c.Flags().IntVar(&top, "top", 10, i18n.T("flag.analyze.top"))
 	return c
 }
