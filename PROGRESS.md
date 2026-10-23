@@ -89,7 +89,7 @@ Add:
 - [x] sizes measured once per menu session (Analyze then Clean: 142 items measured in 0.0 s instead of ~25 s); the cache is emptied after clean apply, uninstall and the tree browser, and is off outside the menu
 ## Phase 11a — speed up (v0.7.0)
 - [x] `swelo speed` + menu "Speed up": RAM, swap, load, uptime; apps by memory footprint (top, resident+compressed — ps RSS hid an 8 GB Gradle daemon) and by CPU; advice for swap ≥ 50 %, load > cores, uptime > 30 days; --json
-- [ ] stale developer processes (cwd in Trash/deleted, MCP/headless Chrome > 1 day, idle Gradle/Kotlin daemons, old claude/code sessions): tick → SIGTERM / tool's own stop; own processes only
+- [x] forgotten developer processes: dev runtimes whose cwd is in the Trash or gone, idle Gradle/Kotlin daemons (CPU < 1 %), Playwright/MCP browsers and headless runs > 1 day, MCP servers whose parent died; helpers folded into their root; own processes only. `speed --stop` / menu: tick → SIGTERM, still-running ones reported, never SIGKILL. Claude Code sessions are not offered (they are live terminal tabs here)
 - [ ] Docker resources: allocated RAM/CPU vs physical, running containers, where the setting lives
 - [ ] Homebrew services always on: tick → brew services stop
 ## Phase 11b — startup items and leftovers (v0.8.0)

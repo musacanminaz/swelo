@@ -68,7 +68,7 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 		case "optimize":
 			err = runOptimize(in, w, home, false, false, true, nil)
 		case "speed":
-			runSpeed(w, 10)
+			err = runSpeed(in, w, home, 10, true)
 		case "status":
 			runStatus(w, home, stateDir(), time.Now())
 		case "history":

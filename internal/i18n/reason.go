@@ -5,6 +5,11 @@ import "strings"
 // reasonsTR translates skip reasons produced by safety and clean.
 var reasonsTR = map[string]string{
 	"Time Machine is not set up":                   "Time Machine kurulu değil",
+	"project folder is in the Trash":               "proje klasörü Çöp'te",
+	"project folder no longer exists":              "proje klasörü artık yok",
+	"idle build daemon":                            "boşta duran build daemon'ı",
+	"Playwright browser older than a day":          "bir günden eski Playwright tarayıcısı",
+	"MCP server whose session ended":               "oturumu bitmiş MCP sunucusu",
 	"brew not installed":                           "brew kurulu değil",
 	"moves the app and its leftovers to the Trash": "uygulamayı ve artıklarını Çöp'e taşır",
 	"moves the app to the Trash":                   "uygulamayı Çöp'e taşır",

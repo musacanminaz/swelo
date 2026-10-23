@@ -15,9 +15,9 @@ PID    PPID   MEM    %CPU
 485    1      1193M- 13.8
 `
 
-const psOut = `  4311   501 /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java -cp x org.gradle.launcher.daemon.bootstrap.GradleDaemon 8.9
-  2012   501 node /Users/me/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
-   485     0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+const psOut = `  4311   501    02:20:45 /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java -cp x org.gradle.launcher.daemon.bootstrap.GradleDaemon 8.9
+  2012   501 04-06:28:45 node /Users/me/.npm/_npx/9833c18b2d85bc59/node_modules/.bin/playwright-mcp
+   485     0 60-00:17:29 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
 `
 
 func TestSnapshotParsing(t *testing.T) {
@@ -39,6 +39,9 @@ func TestSnapshotParsing(t *testing.T) {
 	}
 	if s.Uptime < 24*time.Hour {
 		t.Fatalf("uptime %v", s.Uptime)
+	}
+	if s.Procs[1].Age != 60*24*time.Hour+17*time.Minute+29*time.Second || s.Procs[0].Age != 2*time.Hour+20*time.Minute+45*time.Second {
+		t.Fatalf("ages %v %v", s.Procs[0].Age, s.Procs[1].Age)
 	}
 	// the second top sample wins (cpu 12.5), memory from top, command from ps
 	if len(s.Procs) != 3 || s.Procs[0].PID != 4311 || s.Procs[0].Mem != 8030<<20 || s.Procs[0].CPU != 12.5 || s.Procs[0].PPID != 1 {

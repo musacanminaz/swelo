@@ -1,10 +1,16 @@
 package cli
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"slices"
 	"strings"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/speed"
@@ -14,27 +20,42 @@ import (
 
 func speedCmd() *cobra.Command {
 	var top int
+	var stop bool
 	c := &cobra.Command{
 		Use:   "speed",
 		Short: i18n.T("cmd.speed"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if jsonFlag {
-				return writeJSON(cmd.OutOrStdout(), speed.Snapshot(speed.Real))
+				s := speed.Snapshot(speed.Real)
+				return writeJSON(cmd.OutOrStdout(), speedJSON{s, speed.StaleProcesses(speed.Real, s.Procs, home())})
 			}
-			runSpeed(cmd.OutOrStdout(), top)
-			return nil
+			if stop && !stdinIsTerminal() {
+				return errors.New(i18n.T("speed.stop.needtty"))
+			}
+			return runSpeed(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), top, stop)
 		},
 	}
 	c.Flags().IntVar(&top, "top", 10, i18n.T("flag.speed.top"))
+	c.Flags().BoolVar(&stop, "stop", false, i18n.T("flag.speed.stop"))
 	return c
 }
 
+type speedJSON struct {
+	speed.Summary
+	Stale []speed.Stale `json:"stale_processes"`
+}
+
 // runSpeed shows what is slowing the Mac down: memory, swap, load, uptime,
-// the applications behind them, and what would help.
-func runSpeed(w io.Writer, top int) {
+// the applications behind them, forgotten developer processes, and what
+// would help. With pick, the forgotten processes can be ticked and stopped.
+func runSpeed(in *bufio.Reader, w io.Writer, home string, top int, pick bool) error {
+	del := i18n.T("plan.delete.none")
+	if pick {
+		del = i18n.T("plan.delete.speed")
+	}
 	ui.ShowPlan(w, ui.Plan{
 		Title: "swelo speed", Scan: []string{i18n.T("plan.scan.speed")}, Read: i18n.T("plan.read.speed"),
-		Delete: i18n.T("plan.delete.none"), Perm: i18n.T("plan.perm.none"), Duration: i18n.T("plan.time.speed"),
+		Delete: del, Perm: i18n.T("plan.perm.none"), Duration: i18n.T("plan.time.speed"),
 	})
 	fmt.Fprintf(w, " %s\n", ui.Dim(i18n.T("scanning")))
 	s := speed.Snapshot(speed.Real)
@@ -42,6 +63,73 @@ func runSpeed(w io.Writer, top int) {
 		fmt.Fprintf(w, " %s %s\n", ui.Yellow("!"), ui.Safe(e))
 	}
 	printSummary(w, s, top)
+	stale := speed.StaleProcesses(speed.Real, s.Procs, home)
+	fmt.Fprintf(w, " %s\n", ui.Bold(i18n.T("speed.stale")))
+	if len(stale) == 0 {
+		fmt.Fprintf(w, "   %s\n\n", ui.Dim(i18n.T("speed.stale.none")))
+		return nil
+	}
+	for _, p := range stale {
+		fmt.Fprintf(w, "   %9s  %s %s\n", ui.Bytes(p.Mem), ui.Pad(ui.Safe(p.App), 36), ui.Dim(staleInfo(p, home)))
+	}
+	if !pick {
+		fmt.Fprintf(w, "\n   %s\n\n", ui.Dim(i18n.T("speed.stale.hint")))
+		return nil
+	}
+	items := make([]ui.PickItem, len(stale))
+	for i, p := range stale {
+		items[i] = ui.PickItem{Label: ui.Safe(p.App), Detail: staleInfo(p, home), Size: p.Mem}
+	}
+	fmt.Fprintln(w)
+	pk := ui.NewPicker(i18n.T("pick.stale"), items)
+	if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
+		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
+		return ErrCancelled
+	}
+	var pids []int
+	var mem int64
+	for i, sel := range pk.Selected {
+		if sel {
+			pids = append(pids, stale[i].PID)
+			mem += stale[i].Mem
+		}
+	}
+	if len(pids) == 0 {
+		fmt.Fprintf(w, " %s\n\n", i18n.T("pick.none"))
+		return nil
+	}
+	if !ask(in, w, fmt.Sprintf(i18n.T("speed.stop.confirm"), len(pids), ui.Bytes(mem)), true) {
+		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
+		return ErrCancelled
+	}
+	alive, err := speed.Stop(pids)
+	if err != nil {
+		fmt.Fprintf(w, " %s %s\n", ui.Red("✗"), ui.Safe(err.Error()))
+	}
+	fmt.Fprintf(w, " %s %s\n", ui.Green("✓"), fmt.Sprintf(i18n.T("speed.stopped"), len(pids)-len(alive)))
+	if len(alive) > 0 {
+		var names []string
+		for _, p := range stale {
+			if slices.Contains(alive, p.PID) {
+				names = append(names, fmt.Sprintf("%s (pid %d)", ui.Safe(p.App), p.PID))
+			}
+		}
+		fmt.Fprintf(w, " %s %s\n", ui.Yellow("!"), fmt.Sprintf(i18n.T("speed.stillrunning"), strings.Join(names, ", ")))
+	}
+	fmt.Fprintln(w)
+	return nil
+}
+
+// staleInfo: why a process is listed, its age, and its folder when relevant.
+func staleInfo(p speed.Stale, home string) string {
+	s := i18n.Reason(p.Reason) + " · " + days(p.Age)
+	if p.Reason == speed.ReasonTrash || p.Reason == speed.ReasonGone {
+		s += " · " + short(p.Cwd, home)
+	}
+	if p.Children > 0 {
+		s += " · " + fmt.Sprintf(i18n.T("speed.procs"), p.Children+1)
+	}
+	return s
 }
 
 func printSummary(w io.Writer, s speed.Summary, top int) {

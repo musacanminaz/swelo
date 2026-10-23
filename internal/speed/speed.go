@@ -35,10 +35,11 @@ func Real(argv ...string) (string, error) {
 type Proc struct {
 	PID, PPID int
 	UID       int
-	Mem       int64   `json:"bytes"`
-	CPU       float64 `json:"cpu_percent"`
-	Args      string  `json:"command"`
-	App       string  `json:"app"`
+	Mem       int64         `json:"bytes"`
+	CPU       float64       `json:"cpu_percent"`
+	Args      string        `json:"command"`
+	App       string        `json:"app"`
+	Age       time.Duration `json:"-"`
 }
 
 // App groups the processes of one application.
@@ -75,7 +76,7 @@ func Snapshot(run Runner) Summary {
 	if err != nil {
 		s.Errors = append(s.Errors, "top: "+err.Error())
 	}
-	ps, err := run("ps", "-Axo", "pid=,uid=,args=")
+	ps, err := run("ps", "-Axo", "pid=,uid=,etime=,args=")
 	if err != nil {
 		s.Errors = append(s.Errors, "ps: "+err.Error())
 	}
@@ -116,12 +117,12 @@ func parseProcs(top, ps string) []Proc {
 	byPID := map[int]*Proc{}
 	for _, l := range strings.Split(ps, "\n") {
 		f := strings.Fields(l)
-		if len(f) < 3 {
+		if len(f) < 4 {
 			continue
 		}
 		pid, _ := strconv.Atoi(f[0])
 		uid, _ := strconv.Atoi(f[1])
-		byPID[pid] = &Proc{PID: pid, UID: uid, Args: strings.Join(f[2:], " ")}
+		byPID[pid] = &Proc{PID: pid, UID: uid, Age: parseEtime(f[2]), Args: strings.Join(f[3:], " ")}
 	}
 	samples := 0
 	for _, l := range strings.Split(top, "\n") {
@@ -180,15 +181,8 @@ var appRe = regexp.MustCompile(`/([^/]+)\.app/`)
 // spaces ("Android Studio.app"), so the executable is taken up to the first
 // flag (" -") when it lives in a bundle, not up to the first space.
 func AppName(args string) string {
-	exe, rest, _ := strings.Cut(args, " ")
-	head := args
-	if i := strings.Index(args, " -"); i >= 0 {
-		head = args[:i]
-	}
-	if m := appRe.FindStringSubmatch(head); m != nil {
-		if strings.Contains(head, ".app/") {
-			exe, rest = head, strings.TrimSpace(args[len(head):])
-		}
+	exe, rest := SplitArgs(args)
+	if m := appRe.FindStringSubmatch(exe); m != nil {
 		if hint := runtimeHint(filepath.Base(exe), rest); hint != "" {
 			return m[1] + " · " + hint
 		}
@@ -207,6 +201,21 @@ func AppName(args string) string {
 		return base + " · " + hint
 	}
 	return base
+}
+
+// SplitArgs separates the executable from its arguments. A bundle path may
+// contain spaces ("Android Studio.app/…/bin/java"), so when the command
+// line starts with a bundle the executable runs up to the first flag.
+func SplitArgs(args string) (exe, rest string) {
+	head := args
+	if i := strings.Index(args, " -"); i >= 0 {
+		head = args[:i]
+	}
+	if strings.Contains(head, ".app/") {
+		return head, strings.TrimSpace(args[len(head):])
+	}
+	exe, rest, _ = strings.Cut(args, " ")
+	return exe, rest
 }
 
 // runtimeHint says what a java/node/python/ruby process is running.
