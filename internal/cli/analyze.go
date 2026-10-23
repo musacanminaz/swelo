@@ -34,7 +34,10 @@ func analyzeCmd() *cobra.Command {
 				}
 				return runTree(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), dir, full)
 			}
-			return runAnalyze(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), full, top, stdinIsTerminal())
+			if jsonFlag {
+				return runAnalyze(bufio.NewReader(os.Stdin), io.Discard, home(), full, top, false, cmd.OutOrStdout())
+			}
+			return runAnalyze(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), full, top, stdinIsTerminal(), nil)
 		},
 	}
 	c.Flags().BoolVar(&full, "full", false, "also measure folders macOS protects (needs Full Disk Access)")
@@ -43,7 +46,8 @@ func analyzeCmd() *cobra.Command {
 	return c
 }
 
-func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, interactive bool) error {
+// runAnalyze prints the report to w, or writes it as JSON to jsonOut when set.
+func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, interactive bool, jsonOut io.Writer) error {
 	introGate(in, w, interactive)
 	rs, cfg, err := rules.Load(home)
 	if err != nil {
@@ -112,6 +116,11 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 	var st syscall.Statfs_t
 	syscall.Statfs(home, &st)
 	total, free := int64(st.Blocks)*int64(st.Bsize), int64(st.Bavail)*int64(st.Bsize)
+	if jsonOut != nil {
+		doc := analyzeDoc(res, results, freeable, rs, home, fda || full)
+		doc.Disk.TotalBytes, doc.Disk.FreeBytes = total, free
+		return writeJSON(jsonOut, doc)
+	}
 	fmt.Fprintf(w, "\n %s %s / %s — %s %s  %s\n\n", ui.Bold(i18n.T("disk")), ui.Bytes(total-free), ui.Bytes(total),
 		i18n.T("disk.free"), ui.Bold(ui.Bytes(free)), ui.Dim(fmt.Sprintf("(%.0fs)", time.Since(start).Seconds())))
 
@@ -152,9 +161,32 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 		}
 	}
 
-	printProjects(w, results, top, home, rs)
+	printProjects(w, projectRows(results, rs), top, home)
 	fmt.Fprintf(w, "\n %s\n\n", ui.Dim(i18n.T("analyze.next")))
 	return nil
+}
+
+// analyzeDoc is the --json form of the report (every category, no top cut-off).
+func analyzeDoc(res analyze.Result, results []clean.Result, freeable map[string]int64, rs []rules.Rule, home string, docker bool) analyzeJSON {
+	var doc analyzeJSON
+	doc.Categories, doc.BigFiles, doc.Projects = []jsonCategory{}, []jsonFile{}, []jsonProject{}
+	for id, n := range res.Sizes {
+		doc.HomeBytes += n
+		doc.Categories = append(doc.Categories, jsonCategory{ID: id, Bytes: n, FreeableBytes: freeable[id]})
+	}
+	sort.Slice(doc.Categories, func(i, j int) bool { return doc.Categories[i].Bytes > doc.Categories[j].Bytes })
+	if alloc, maxSize, ok := dockerRaw(home, docker); ok {
+		doc.DockerImage = &jsonDocker{alloc, maxSize}
+	}
+	for _, f := range res.BigFiles {
+		doc.BigFiles = append(doc.BigFiles, jsonFile{f.Path, f.Size})
+	}
+	for _, r := range projectRows(results, rs) {
+		doc.Projects = append(doc.Projects, jsonProject{r.dir, r.size, r.changed})
+	}
+	doc.SkippedProtected = append([]string{}, res.Skipped...)
+	doc.Unreadable = res.Unreadable
+	return doc
 }
 
 // dockerImage describes Docker Desktop's disk image: allocated vs. maximum size.
@@ -190,7 +222,9 @@ type projectRow struct {
 }
 
 // printProjects lists projects by regenerable size, with their last change.
-func printProjects(w io.Writer, results []clean.Result, top int, home string, rs []rules.Rule) {
+// projectRows sums each project's regenerable data (found or skipped) and
+// finds its last change; projects under 10 MB are left out, largest first.
+func projectRows(results []clean.Result, rs []rules.Rule) []*projectRow {
 	skip := map[string]bool{}
 	for _, r := range rs {
 		for _, n := range r.Names {
@@ -217,10 +251,14 @@ func printProjects(w io.Writer, results []clean.Result, top int, home string, rs
 			rows = append(rows, r)
 		}
 	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].size > rows[j].size })
+	return rows
+}
+
+func printProjects(w io.Writer, rows []*projectRow, top int, home string) {
 	if len(rows) == 0 {
 		return
 	}
-	sort.Slice(rows, func(i, j int) bool { return rows[i].size > rows[j].size })
 	fmt.Fprintf(w, "\n %s\n", ui.Bold(i18n.T("analyze.projects")))
 	for i, r := range rows {
 		if i == top {

@@ -24,6 +24,7 @@ import (
 type uninstallOpts struct {
 	only, remove      []string
 	pick, yes, noSudo bool
+	json              io.Writer // --json: list only, as one document
 }
 
 func uninstallCmd() *cobra.Command {
@@ -32,6 +33,10 @@ func uninstallCmd() *cobra.Command {
 		Use:   "uninstall",
 		Short: i18n.T("cmd.uninstall"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if jsonFlag {
+				o.json = cmd.OutOrStdout()
+				return runUninstall(bufio.NewReader(os.Stdin), io.Discard, home(), o)
+			}
 			return runUninstall(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), o)
 		},
 	}
@@ -45,10 +50,13 @@ func uninstallCmd() *cobra.Command {
 }
 
 func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) error {
+	if o.json != nil && (o.pick || len(o.remove) > 0) {
+		return errors.New(i18n.T("json.listonly"))
+	}
 	if o.pick && !stdinIsTerminal() {
 		return errors.New(i18n.T("uninstall.needtty"))
 	}
-	introGate(in, w, stdinIsTerminal())
+	introGate(in, w, stdinIsTerminal() && o.json == nil)
 	if o.pick && len(o.only) == 0 {
 		// one kind at a time keeps the list short (and the scan quick)
 		items := []ui.PickItem{{Label: i18n.T("uninstall.kind.all"), Detail: i18n.T("uninstall.kind.all.desc")}}
@@ -143,6 +151,8 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 				return fmt.Errorf(i18n.T("uninstall.ambiguous"), want, strings.Join(ids, ", "))
 			}
 		}
+	case o.json != nil:
+		return writeJSON(o.json, packagesJSON(pkgs))
 	default:
 		printPackages(w, pkgs, home)
 		fmt.Fprintf(w, "\n %s\n %s\n\n", ui.Dim(i18n.T("uninstall.next")), ui.Dim(i18n.T("uninstall.next2")))
@@ -261,4 +271,20 @@ func ago(t time.Time) string {
 		return i18n.T("today")
 	}
 	return fmt.Sprintf(i18n.T("days.ago"), d)
+}
+
+func packagesJSON(pkgs []uninstall.Package) uninstallJSON {
+	doc := uninstallJSON{Packages: []jsonPackage{}}
+	for _, p := range pkgs {
+		jp := jsonPackage{ID: p.ID, Provider: p.Provider, Name: p.Name, Bytes: p.Size, UsedBy: p.UsedBy,
+			Note: p.Note, Command: p.Command, Sudo: p.Sudo}
+		if !p.Installed.IsZero() {
+			jp.Installed = &p.Installed
+		}
+		if !p.LastUsed.IsZero() {
+			jp.LastUsed = &p.LastUsed
+		}
+		doc.Packages = append(doc.Packages, jp)
+	}
+	return doc
 }

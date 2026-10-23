@@ -34,6 +34,8 @@ confirmed, and `sudo -k` runs when swelo quits) and opens the Full Disk Access s
 | `swelo status` / `swelo history` | Disk status, free-space trend, recent cleanups / full log of everything swelo removed | ✅ |
 
 Output language follows your system (Turkish or English); override with `--lang tr|en`.
+`--json` prints one JSON document instead (clean, analyze, uninstall, status; no prompts, so
+`clean --apply` needs `--yes`). Exit status: 0 done, 1 error, 2 cancelled by you.
 
 ## Install
 

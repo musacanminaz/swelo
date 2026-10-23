@@ -54,7 +54,7 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 		case "clean":
 			err = runClean(in, w, home, cleanOpts{pick: true, recentDays: -1}, true)
 		case "analyze":
-			err = runAnalyze(in, w, home, false, 10, true)
+			err = runAnalyze(in, w, home, false, 10, true, nil)
 		case "tree":
 			err = runTree(in, w, home, home, false)
 		case "uninstall":

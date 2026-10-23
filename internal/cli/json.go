@@ -67,11 +67,8 @@ type statusJSON struct {
 		FreeBytes   int64   `json:"free_bytes"`
 		UsedPercent float64 `json:"used_percent"`
 	} `json:"disk"`
-	DockerImage *struct {
-		AllocatedBytes int64 `json:"allocated_bytes"`
-		MaxBytes       int64 `json:"max_bytes"`
-	} `json:"docker_image,omitempty"`
-	Trend *struct {
+	DockerImage *jsonDocker `json:"docker_image,omitempty"`
+	Trend       *struct {
 		Since         time.Time `json:"since"`
 		FreeBytesThen int64     `json:"free_bytes_then"`
 		DeltaBytes    int64     `json:"delta_bytes"`
@@ -81,4 +78,57 @@ type statusJSON struct {
 		Bytes int64  `json:"bytes"`
 		Items int    `json:"items"`
 	} `json:"cleanups"`
+}
+
+type jsonCategory struct {
+	ID            string `json:"id"`
+	Bytes         int64  `json:"bytes"`
+	FreeableBytes int64  `json:"freeable_bytes"`
+}
+
+type jsonFile struct {
+	Path  string `json:"path"`
+	Bytes int64  `json:"bytes"`
+}
+
+type jsonProject struct {
+	Path             string    `json:"path"`
+	RegenerableBytes int64     `json:"regenerable_bytes"`
+	Changed          time.Time `json:"changed"`
+}
+
+type jsonDocker struct {
+	AllocatedBytes int64 `json:"allocated_bytes"`
+	MaxBytes       int64 `json:"max_bytes"`
+}
+
+type analyzeJSON struct {
+	Disk struct {
+		TotalBytes int64 `json:"total_bytes"`
+		FreeBytes  int64 `json:"free_bytes"`
+	} `json:"disk"`
+	HomeBytes        int64          `json:"home_bytes"`
+	Categories       []jsonCategory `json:"categories"`
+	DockerImage      *jsonDocker    `json:"docker_image,omitempty"`
+	BigFiles         []jsonFile     `json:"big_files"`
+	Projects         []jsonProject  `json:"projects"`
+	SkippedProtected []string       `json:"skipped_protected"`
+	Unreadable       int            `json:"unreadable_folders"`
+}
+
+type jsonPackage struct {
+	ID        string     `json:"id"`
+	Provider  string     `json:"provider"`
+	Name      string     `json:"name"`
+	Bytes     int64      `json:"bytes"`
+	Installed *time.Time `json:"installed,omitempty"`
+	LastUsed  *time.Time `json:"last_used,omitempty"`
+	UsedBy    []string   `json:"used_by,omitempty"`
+	Note      string     `json:"note,omitempty"`
+	Command   []string   `json:"command,omitempty"`
+	Sudo      bool       `json:"sudo"`
+}
+
+type uninstallJSON struct {
+	Packages []jsonPackage `json:"packages"`
 }

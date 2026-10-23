@@ -49,10 +49,7 @@ func statusData(home, dir string, now time.Time) statusJSON {
 		d.Disk.UsedPercent = float64(total-free) / float64(total) * 100
 	}
 	if alloc, maxSize, ok := dockerRaw(home, perm.FullDiskAccess(home)); ok {
-		d.DockerImage = &struct {
-			AllocatedBytes int64 `json:"allocated_bytes"`
-			MaxBytes       int64 `json:"max_bytes"`
-		}{alloc, maxSize}
+		d.DockerImage = &jsonDocker{alloc, maxSize}
 	}
 	cutoff := now.AddDate(0, 0, -30)
 	for _, s := range state.Snapshots(dir) {

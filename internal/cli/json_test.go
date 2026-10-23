@@ -10,7 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/musacanminaz/swelo/internal/analyze"
+	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/i18n"
+	"github.com/musacanminaz/swelo/internal/rules"
+	"github.com/musacanminaz/swelo/internal/uninstall"
 )
 
 func TestCleanJSON(t *testing.T) {
@@ -61,5 +65,23 @@ func TestStatusJSON(t *testing.T) {
 	writeJSON(&out, d)
 	if !strings.Contains(out.String(), `"cleanups": []`) {
 		t.Fatalf("empty cleanups must be a list:\n%s", out.String())
+	}
+}
+
+func TestAnalyzeAndUninstallDocs(t *testing.T) {
+	res := analyze.Result{Sizes: map[string]int64{"projects": 50, "other": 100}, BigFiles: []analyze.File{{Path: "/h/big", Size: 2e9}}, Skipped: []string{"/h/Library/Mail"}}
+	proj := t.TempDir()
+	results := []clean.Result{{Rule: rules.Rule{ID: "node", Kind: "artifact", Names: []string{"node_modules"}},
+		Items: []clean.Item{{Path: proj + "/node_modules", Project: proj, Size: 2e7}}}}
+	doc := analyzeDoc(res, results, map[string]int64{"projects": 20}, nil, "/h", false)
+	if doc.HomeBytes != 150 || doc.Categories[0].ID != "other" || doc.Categories[1].FreeableBytes != 20 ||
+		len(doc.BigFiles) != 1 || len(doc.Projects) != 1 || doc.Projects[0].Path != proj || len(doc.SkippedProtected) != 1 {
+		t.Fatalf("%+v", doc)
+	}
+	u := packagesJSON([]uninstall.Package{{ID: "brew:x", Provider: "brew", Name: "x", Size: 5, Command: []string{"brew", "uninstall", "x"}}})
+	var out bytes.Buffer
+	writeJSON(&out, u)
+	if !strings.Contains(out.String(), `"command": [`) || strings.Contains(out.String(), `"installed"`) {
+		t.Fatalf("%s", out.String())
 	}
 }

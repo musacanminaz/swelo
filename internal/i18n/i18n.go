@@ -134,6 +134,7 @@ var msgs = map[string][2]string{
 	"plan.before":   {"before it starts", "çalıştırmadan önce"},
 	"plan.scan":     {"Will scan", "Taranacak"},
 	"plan.roots":    {"~ (%d project folders)", "~ (%d proje klasörü)"},
+	"json.listonly": {"--json only lists; run --pick or --remove without it", "--json sadece listeler; --pick veya --remove'u onsuz çalıştırın"},
 	"json.noprompt": {"--json cannot ask: drop --pick, or add --yes to --apply", "--json soru soramaz: --pick kaldırın ya da --apply yanına --yes ekleyin"},
 	"clean.quiet":   {"%d more rules found nothing (--all lists them)", "%d kuralda daha bulgu yok (--all hepsini listeler)"},
 	"plan.read":     {"Will read", "Okunacak"},

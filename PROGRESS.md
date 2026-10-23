@@ -79,7 +79,7 @@ Add:
 - [x] menu header: last cleanup ("last cleanup 2 days ago · 5.1 GB")
 ## Phase 9 — CLI style (v0.6.0)
 - [x] `--json` (global flag) for clean and status; exit codes 0 ok / 1 error / 2 cancelled (ErrCancelled; the menu ignores it)
-- [ ] `--json` for analyze and uninstall
+- [x] `--json` for analyze (every category, big files, projects, skipped protected folders) and uninstall (list only; --pick/--remove refuse it)
 - [ ] `swelo rules`; `swelo clean node docker` shortcut for --only
 - [ ] `swelo config` (set lang, roots add, edit); menu language choice saved
 - [ ] shell completions installed by the brew formula
