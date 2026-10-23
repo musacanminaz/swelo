@@ -81,7 +81,7 @@ Add:
 - [x] `--json` (global flag) for clean and status; exit codes 0 ok / 1 error / 2 cancelled (ErrCancelled; the menu ignores it)
 - [x] `--json` for analyze (every category, big files, projects, skipped protected folders) and uninstall (list only; --pick/--remove refuse it)
 - [x] `swelo rules` (by group: risk, id, what it looks at, disabled-in-config; --json); `swelo clean node docker` = --only; unknown ids are an error
-- [ ] `swelo config` (set lang, roots add, edit); menu language choice saved
+- [x] `swelo config` (show; set lang/recent_days/top; add|remove roots/exclude/protected/disable; edit) editing the YAML in place, comments kept; `lang:` in config; the menu language switch is saved
 - [ ] shell completions installed by the brew formula
 - [ ] flag descriptions localized (--lang tr)
 ## Phase 10 — speed (v0.6.1)

@@ -15,6 +15,7 @@ import (
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
+	"github.com/musacanminaz/swelo/internal/rules"
 	"github.com/musacanminaz/swelo/internal/state"
 	"github.com/musacanminaz/swelo/internal/ui"
 )
@@ -74,6 +75,7 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 			} else {
 				i18n.Set("tr")
 			}
+			rules.SetConfig(home, "lang", i18n.Lang()) // remembered for next time
 			continue
 		}
 		if err != nil && !errors.Is(err, ErrCancelled) {

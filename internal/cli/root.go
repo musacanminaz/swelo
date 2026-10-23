@@ -10,6 +10,7 @@ import (
 
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
+	"github.com/musacanminaz/swelo/internal/rules"
 	"github.com/musacanminaz/swelo/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -28,6 +29,10 @@ func Execute() error {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRun: func(*cobra.Command, []string) {
+			if langFlag == "" {
+				cfg, _ := rules.ReadConfig(home()) // --lang wins; else the config; else the system
+				langFlag = cfg.Lang
+			}
 			i18n.Set(langFlag)
 			recordSnapshot()
 		},
@@ -43,7 +48,7 @@ func Execute() error {
 	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, "machine-readable output: one JSON document, no prompts (clean --apply needs --yes)")
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
-	root.AddCommand(permissionsCmd(), rulesCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
+	root.AddCommand(permissionsCmd(), rulesCmd(), configCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
 	return root.Execute()
 }
 

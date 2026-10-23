@@ -73,7 +73,8 @@ Every deletion is logged to `~/.local/state/swelo/history.jsonl`.
 
 ## Configuration
 
-`~/.config/swelo/config.yaml`:
+`~/.config/swelo/config.yaml` — shown and changed with `swelo config` (`config set lang tr`,
+`config add roots ~/code`, `config add disable docker`, `config edit`); the menu's language switch is saved here too:
 
 ```yaml
 roots: [~/Desktop, ~/code]        # where projects live (default: ~/* — every folder in home
@@ -82,6 +83,7 @@ roots: [~/Desktop, ~/code]        # where projects live (default: ~/* — every 
 exclude: ["*/my-release/*"]       # never touched
 recent_days: 7                    # skip projects changed this recently
 disable: [browser-cache, docker]  # rule ids or groups
+lang: tr                          # output language (default: the system's)
 ```
 
 `~/.config/swelo/rules.yaml` adds rules or overrides built-in ones by `id`; see

@@ -65,6 +65,7 @@ type Config struct {
 	RecentDays *int     `yaml:"recent_days"` // skip projects changed within N days (default 7)
 	Disable    []string `yaml:"disable"`     // rule ids or groups to turn off
 	Top        int      `yaml:"top"`         // items listed per rule (default 10)
+	Lang       string   `yaml:"lang"`        // output language: tr | en (default: the system's)
 }
 
 // DefaultRoots are scanned for projects when the config names none: every
