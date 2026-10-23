@@ -73,7 +73,7 @@ Remove/simplify:
 - [x] status trend sentence ("3 days ago 91.1 GB was free, now 53.0 GB (−38.1 GB)"); `completion`/`help` hidden in help. Analyze header checked: it is right-aligned over the numbers, no change
 Add:
 - [ ] picker: expand a rule (→/Enter) and untick single items
-- [ ] picker keys: a all, n none, / filter, PgUp/PgDn/Home/End
+- [x] picker keys: a all, n none (visible rows), / filter on label/detail/group (Enter keeps, Esc clears), PgUp/PgDn/Home/End
 - [ ] uninstall: choose a kind first (apps / Homebrew / Docker images …)
 - [ ] menu "Quick clean": safe rules, one confirmation, no picker
 - [ ] menu header: last cleanup ("3 days ago, 5.1 GB")

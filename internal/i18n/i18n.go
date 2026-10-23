@@ -266,7 +266,9 @@ var msgs = map[string][2]string{
 	"days.ago":              {"%d days ago", "%d gün önce"},
 
 	"pick.count":               {"%d selected", "%d seçili"},
-	"pick.help":                {"↑↓ move · space select · enter continue · q cancel", "↑↓ gez · boşluk seç · enter devam · q iptal"},
+	"pick.help":                {"↑↓ move · space select · a all · n none · / filter · enter continue · q cancel", "↑↓ gez · boşluk seç · a tümü · n hiçbiri · / filtre · enter devam · q iptal"},
+	"pick.help.filter":         {"type to filter · enter keep · esc clear", "filtrelemek için yazın · enter tut · esc temizle"},
+	"pick.matches":             {"%d of %d", "%d / %d"},
 	"pick.title":               {"Select what to uninstall", "Kaldırılacakları seçin"},
 	"pick.clean":               {"Select what to delete (🟢 ticked, 🟡 not)", "Silinecekleri seçin (🟢 seçili, 🟡 değil)"},
 	"pick.optimize":            {"Select the tasks to run", "Çalıştırılacak işleri seçin"},
