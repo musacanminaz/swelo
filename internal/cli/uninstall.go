@@ -38,7 +38,7 @@ func uninstallCmd() *cobra.Command {
 	f := c.Flags()
 	f.StringSliceVar(&o.only, "only", nil, "providers: app, simruntime, android, brew, node, python, rust, jdk, npm-global, docker-image, vscode, ollama")
 	f.BoolVar(&o.pick, "pick", false, "choose what to uninstall interactively")
-	f.StringSliceVar(&o.remove, "remove", nil, "uninstall these ids (shown in the list)")
+	f.StringSliceVar(&o.remove, "remove", nil, "uninstall these packages, by name as listed (or id)")
 	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")
 	f.BoolVar(&o.noSudo, "no-sudo", false, "skip every step that needs sudo")
 	return c
@@ -101,16 +101,25 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 			}
 		}
 	case len(o.remove) > 0:
-		byID := map[string]uninstall.Package{}
-		for _, p := range pkgs {
-			byID[p.ID] = p
-		}
-		for _, id := range o.remove {
-			p, ok := byID[id]
-			if !ok {
-				return fmt.Errorf(i18n.T("uninstall.unknown"), id)
+		for _, want := range o.remove {
+			var matches []uninstall.Package
+			for _, p := range pkgs {
+				if p.ID == want || strings.EqualFold(p.Name, want) || strings.EqualFold(strings.TrimSuffix(p.Name, ".app"), want) {
+					matches = append(matches, p)
+				}
 			}
-			chosen = append(chosen, p)
+			switch len(matches) {
+			case 0:
+				return fmt.Errorf(i18n.T("uninstall.unknown"), want)
+			case 1:
+				chosen = append(chosen, matches[0])
+			default:
+				var ids []string
+				for _, m := range matches {
+					ids = append(ids, m.ID)
+				}
+				return fmt.Errorf(i18n.T("uninstall.ambiguous"), want, strings.Join(ids, ", "))
+			}
 		}
 	default:
 		printPackages(w, pkgs, home)
@@ -193,7 +202,6 @@ func printPackages(w io.Writer, pkgs []uninstall.Package, home string) {
 		}
 		total += p.Size
 		fmt.Fprintf(w, "   %9s  %s %s\n", sizeOrBlank(p.Size), ui.Pad(ui.Safe(p.Name), 46), pkgInfo(p, home))
-		fmt.Fprintf(w, "   %9s  %s\n", "", ui.Dim("id: "+ui.Safe(p.ID)))
 	}
 	fmt.Fprintf(w, "\n %s %s\n", ui.Bold(i18n.T("col.total")), ui.Bold(ui.Bytes(total)))
 }

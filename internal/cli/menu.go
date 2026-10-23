@@ -123,6 +123,7 @@ func permissionsMenu(in *bufio.Reader, w io.Writer, home string) {
 			{Label: sudoLabel, Detail: sudoDesc},
 			{Label: i18n.T("perm.menu.fda"), Detail: fdaDesc},
 			{Label: i18n.T("perm.menu.info"), Detail: i18n.T("perm.menu.info.desc")},
+			{Label: i18n.T("perm.menu.intro"), Detail: i18n.T("perm.menu.intro.desc")},
 			{Label: i18n.T("perm.menu.back")},
 		}
 		fmt.Fprintln(w)
@@ -157,6 +158,9 @@ func permissionsMenu(in *bufio.Reader, w io.Writer, home string) {
 			ui.WaitEnter(in, w, i18n.T("menu.back"))
 		case 2:
 			printPermissions(w)
+			ui.WaitEnter(in, w, i18n.T("menu.back"))
+		case 3:
+			welcome(w)
 			ui.WaitEnter(in, w, i18n.T("menu.back"))
 		default:
 			return

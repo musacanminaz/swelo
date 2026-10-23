@@ -68,7 +68,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	}
 	ui.ShowPlan(w, ui.Plan{
 		Title:    "swelo clean",
-		Scan:     append(shortAll(rules.ProjectRoots(cfg, home), home), "~/Library/Caches", "~/Library/Developer", "Docker"),
+		Scan:     append(rootsLabel(rules.ProjectRoots(cfg, home), home), "~/Library/Caches", "~/Library/Developer", "Docker"),
 		Read:     i18n.T("plan.read.clean"),
 		Delete:   del,
 		Perm:     i18n.T("plan.perm.none"),
@@ -83,8 +83,12 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	before := clean.FreeBytes(home)
 
 	var safe, risky int64
+	quiet := 0
 	for _, r := range results {
 		if !printResult(w, r, cfg.Top, o, home) {
+			if !r.Rule.Disabled && !strings.HasSuffix(r.Note, "not installed") {
+				quiet++
+			}
 			continue
 		}
 		switch {
@@ -97,6 +101,9 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	total := safe
 	if o.risky {
 		total += risky
+	}
+	if quiet > 0 {
+		fmt.Fprintf(w, "\n %s\n", ui.Dim(fmt.Sprintf(i18n.T("clean.quiet"), quiet)))
 	}
 	fmt.Fprintf(w, "\n %s %s", ui.Bold(i18n.T("total.safe")), ui.Bold(ui.Bytes(safe)))
 	if risky > 0 {
@@ -158,9 +165,14 @@ func matchesOnly(r rules.Rule, only []string) bool {
 	return false
 }
 
-func shortAll(paths []string, home string) []string {
-	out := make([]string, len(paths))
-	for i, p := range paths {
+// rootsLabel names the project roots for the plan box: listed when few,
+// counted when they are the folders of home ("~ (16 project folders)").
+func rootsLabel(roots []string, home string) []string {
+	if len(roots) > 3 {
+		return []string{fmt.Sprintf(i18n.T("plan.roots"), len(roots))}
+	}
+	out := make([]string, len(roots))
+	for i, p := range roots {
 		out[i] = short(p, home)
 	}
 	return out
@@ -191,6 +203,15 @@ func printResult(w io.Writer, r clean.Result, top int, o cleanOpts, home string)
 	size := ui.Bytes(r.Size)
 	if !sizeKnown(r) {
 		size = "" // size unknown until the command runs
+	}
+	if len(r.Items) == 0 && r.Show == "" && r.Size == 0 && !o.all {
+		// nothing to delete: one line saying why
+		why := i18n.Reason(r.Note)
+		if len(r.Skips) > 0 {
+			why = skipSummary(r.Skips, false, home)
+		}
+		fmt.Fprintf(w, " %s %s%s — %s %s\n", mark, ui.Bold(r.Rule.ID), tag, r.Rule.Description(i18n.Lang()), ui.Dim("· "+why))
+		return true
 	}
 	fmt.Fprintf(w, "\n %s %s%s — %s  %s%s\n", mark, ui.Bold(r.Rule.ID), tag, r.Rule.Description(i18n.Lang()),
 		ui.Bold(size), ui.Dim(count))

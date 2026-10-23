@@ -64,7 +64,7 @@ func runStatus(w io.Writer, home, dir string, now time.Time) {
 			if delta < 0 {
 				sign, delta = "−", -delta
 			}
-			fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("status.trend"), ago(s.Time), ui.Bytes(s.Free), sign+ui.Bytes(delta))))
+			fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("status.trend"), ago(s.Time), ui.Bytes(s.Free), ui.Bytes(free), sign+ui.Bytes(delta))))
 			break
 		}
 	}

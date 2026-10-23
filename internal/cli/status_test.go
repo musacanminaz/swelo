@@ -26,7 +26,7 @@ func TestStatusAndHistory(t *testing.T) {
 			`{"time":"`+time.Now().Format(time.RFC3339)+`","uninstall":"brew:x","bytes":5,"ok":false}`+"\n"), 0o644)
 	out.Reset()
 	runStatus(&out, home, dir, time.Now())
-	for _, want := range []string{"2 days ago: 1.0 GB free", "Recent cleanups", "2.0 GB", "1 items"} {
+	for _, want := range []string{"2 days ago 1.0 GB was free, now", "Recent cleanups", "2.0 GB", "1 items"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("status missing %q:\n%s", want, out.String())
 		}

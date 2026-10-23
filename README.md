@@ -29,7 +29,7 @@ confirmed, and `sudo -k` runs when swelo quits) and opens the Full Disk Access s
 | `swelo permissions` | Every permission (Full Disk Access, sudo) explained | ✅ |
 | `swelo clean` | Clean regenerable files; dry run unless `--apply`, `--pick` to tick rules | ✅ |
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
-| `swelo uninstall` | Lists apps (with their ~/Library leftovers) and developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <id>` uninstalls with each tool's own command after showing it | ✅ |
+| `swelo uninstall` | Lists apps (with their ~/Library leftovers) and developer toolchains (Homebrew, nvm, pyenv, rustup, simulator runtimes, Android SDK, JDKs, global npm, Docker images, editor extensions, Ollama) with size, age and which projects pin them; `--pick` or `--remove <name>` uninstalls with each tool's own command after showing it | ✅ |
 | `swelo optimize` | Time Machine exclusions for regenerable folders, `git gc` on large repos, `brew autoremove` (dry run unless `--apply`, `--pick` to tick tasks) | ✅ |
 | `swelo status` / `swelo history` | Disk status, free-space trend, recent cleanups / full log of everything swelo removed | ✅ |
 

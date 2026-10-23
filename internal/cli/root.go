@@ -17,10 +17,7 @@ import (
 // Version is set at build time with -ldflags "-X .../cli.Version=x.y.z".
 var Version = "dev"
 
-var (
-	langFlag  string
-	introFlag bool
-)
+var langFlag string
 
 // Execute runs the root command.
 func Execute() error {
@@ -35,9 +32,6 @@ func Execute() error {
 			recordSnapshot()
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if introFlag {
-				os.Remove(introMarker())
-			}
 			if stdinIsTerminal() && ui.IsTerminal(os.Stdout) {
 				return runMenu(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home())
 			}
@@ -46,7 +40,8 @@ func Execute() error {
 		},
 	}
 	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
-	root.Flags().BoolVar(&introFlag, "intro", false, "show the first-run introduction again before the next scan")
+	root.CompletionOptions.HiddenDefaultCmd = true
+	root.SetHelpCommand(&cobra.Command{Hidden: true})
 	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
 	return root.Execute()
 }

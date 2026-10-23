@@ -45,7 +45,7 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bo
 		del = i18n.T("plan.delete.optimize")
 	}
 	ui.ShowPlan(w, ui.Plan{
-		Title: "swelo optimize", Scan: shortAll(rules.ProjectRoots(cfg, home), home),
+		Title: "swelo optimize", Scan: rootsLabel(rules.ProjectRoots(cfg, home), home),
 		Read: i18n.T("plan.read.optimize"), Delete: del, Perm: i18n.T("plan.perm.none"),
 		Duration: i18n.T("plan.time.clean"),
 	})

@@ -63,3 +63,26 @@ Formula/swelo.rb after tagging.
 Waiting on notability: ≥75 stars or ≥30 forks/watchers, and the repo older than 30 days (eligible from 2026-11-19).
 Status on 2026-10-20: 0 stars, 0 forks, 0 watchers, created 2026-10-20.
 When eligible: `brew create`-style formula (the tap formula already builds from source with a test), `brew audit --new --strict --online swelo`, PR to Homebrew/homebrew-core.
+## Phase 8 — user experience (v0.5.0)
+Remove/simplify:
+- [x] clean output: rules with nothing to delete are one line (`● flutter — … · skipped 5: …`); rules with no findings at all are counted at the end
+- [x] plan box "Scan" line: `~ (16 project folders), ~/Library/Caches, …` (listed when ≤ 3 roots)
+- [x] uninstall: no `id:` lines; `--remove` accepts names (case-insensitive, ".app" optional) or ids; ambiguous names ask for the id
+- [x] `--intro` flag removed → menu Permissions → "Show the introduction again"
+- [x] intro text fixed (confirmation instead of --apply; recent projects skipped unless ticked)
+- [x] status trend sentence ("3 days ago 91.1 GB was free, now 53.0 GB (−38.1 GB)"); `completion`/`help` hidden in help. Analyze header checked: it is right-aligned over the numbers, no change
+Add:
+- [ ] picker: expand a rule (→/Enter) and untick single items
+- [ ] picker keys: a all, n none, / filter, PgUp/PgDn/Home/End
+- [ ] uninstall: choose a kind first (apps / Homebrew / Docker images …)
+- [ ] menu "Quick clean": safe rules, one confirmation, no picker
+- [ ] menu header: last cleanup ("3 days ago, 5.1 GB")
+## Phase 9 — CLI style (v0.6.0)
+- [ ] `--json` for clean, analyze, uninstall, status; exit codes 0 ok / 1 error / 2 cancelled
+- [ ] `swelo rules`; `swelo clean node docker` shortcut for --only
+- [ ] `swelo config` (set lang, roots add, edit); menu language choice saved
+- [ ] shell completions installed by the brew formula
+- [ ] flag descriptions localized (--lang tr)
+## Phase 10 — speed (v0.6.1)
+- [ ] optimize scans artifacts only when Time Machine is set up
+- [ ] sizes measured once per menu session (analyze → clean), reset after deletions
