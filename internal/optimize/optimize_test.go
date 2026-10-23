@@ -81,3 +81,12 @@ func TestGitAndBrew(t *testing.T) {
 		t.Fatalf("brew = %+v", brew)
 	}
 }
+
+func TestTimeMachineSetUp(t *testing.T) {
+	if TimeMachineSetUp(func(...string) (string, error) { return "tmutil: No destinations configured.", nil }) {
+		t.Fatal("no destinations reported as set up")
+	}
+	if !TimeMachineSetUp(func(...string) (string, error) { return "> Name : Backup\n", nil }) {
+		t.Fatal("a destination reported as not set up")
+	}
+}

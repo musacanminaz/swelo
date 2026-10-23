@@ -57,7 +57,7 @@ func Real(argv ...string) (string, error) {
 // exclusions (`tmutil addexclusion`, no sudo; undo: `tmutil removeexclusion`).
 func TimeMachine(run Runner, dirs []string) Task {
 	t := Task{ID: "timemachine"}
-	if out, _ := run("tmutil", "destinationinfo"); strings.Contains(out, "No destinations") {
+	if !TimeMachineSetUp(run) {
 		t.Note = "Time Machine is not set up"
 		return t
 	}
@@ -100,6 +100,13 @@ func TimeMachine(run Runner, dirs []string) Task {
 		return run(append([]string{"tmutil", "addexclusion"}, items...)...)
 	}
 	return t
+}
+
+// TimeMachineSetUp reports whether a backup destination is configured; the
+// artifact scan that feeds TimeMachine is pointless without one.
+func TimeMachineSetUp(run Runner) bool {
+	out, _ := run("tmutil", "destinationinfo")
+	return !strings.Contains(out, "No destinations")
 }
 
 // Git runs `git gc` and `git worktree prune` on repositories whose .git is at

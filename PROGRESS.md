@@ -85,5 +85,5 @@ Add:
 - [x] shell completions: the tap formula installs zsh/bash/fish completions (generate_completions_from_executable); rule ids/groups, uninstall providers, config keys and --lang values complete
 - [x] help fully localized: flag descriptions, usage headings, help/version flags follow --lang / config (language is read before the command tree is built)
 ## Phase 10 — speed (v0.6.1)
-- [ ] optimize scans artifacts only when Time Machine is set up
+- [x] optimize scans artifacts only when Time Machine is set up (here: 45 s → 10 s); the plan box says so
 - [ ] sizes measured once per menu session (analyze → clean), reset after deletions

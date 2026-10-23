@@ -44,32 +44,43 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bo
 	if apply {
 		del = i18n.T("plan.delete.optimize")
 	}
+	want := func(id string) bool { return len(only) == 0 || contains(only, id) }
+	// the artifact scan (the slow part) only serves Time Machine exclusions
+	scan := want("timemachine") && optimize.TimeMachineSetUp(optimize.Real)
+	duration := i18n.T("plan.time.clean")
+	if !scan {
+		duration = i18n.T("plan.time.optimize.noscan")
+	}
 	ui.ShowPlan(w, ui.Plan{
 		Title: "swelo optimize", Scan: rootsLabel(rules.ProjectRoots(cfg, home), home),
 		Read: i18n.T("plan.read.optimize"), Delete: del, Perm: i18n.T("plan.perm.none"),
-		Duration: i18n.T("plan.time.clean"),
+		Duration: duration,
 	})
 	fmt.Fprintf(w, " %s\n", ui.Dim(i18n.T("scanning")))
 
 	eng := clean.New(home, rs, cfg)
 	eng.FDA = perm.FullDiskAccess(home)
-	st := ui.NewStatus(w)
-	done := watchScan(eng, st, home)
-	results := eng.Scan()
-	done()
-	st.Stop()
-	var regen []string
 	skip := map[string]bool{}
-	for _, r := range results {
-		for _, n := range r.Rule.Names {
+	for _, r := range rs {
+		for _, n := range r.Names {
 			skip[n] = true
 		}
-		if r.Rule.Risk == rules.Report || r.Rule.Kind == "command" {
-			continue
-		}
-		for _, it := range r.Items { // only what passed the safety gate, never skipped items
-			if eng.Guard.Check(it.Path, it.Project) == nil {
-				regen = append(regen, it.Path)
+	}
+	var regen []string
+	if scan {
+		st := ui.NewStatus(w)
+		done := watchScan(eng, st, home)
+		results := eng.Scan()
+		done()
+		st.Stop()
+		for _, r := range results {
+			if r.Rule.Risk == rules.Report || r.Rule.Kind == "command" {
+				continue
+			}
+			for _, it := range r.Items { // only what passed the safety gate, never skipped items
+				if eng.Guard.Check(it.Path, it.Project) == nil {
+					regen = append(regen, it.Path)
+				}
 			}
 		}
 	}
@@ -77,7 +88,6 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bo
 	have := func(n string) bool { _, err := exec.LookPath(n); return err == nil }
 
 	var tasks []optimize.Task
-	want := func(id string) bool { return len(only) == 0 || contains(only, id) }
 	if want("timemachine") {
 		tasks = append(tasks, optimize.TimeMachine(optimize.Real, regen))
 	}
