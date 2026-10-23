@@ -87,11 +87,11 @@ Add:
 ## Phase 10 — speed (v0.6.1) — released 2026-10-23
 - [x] optimize scans artifacts only when Time Machine is set up (here: 45 s → 10 s); the plan box says so
 - [x] sizes measured once per menu session (Analyze then Clean: 142 items measured in 0.0 s instead of ~25 s); the cache is emptied after clean apply, uninstall and the tree browser, and is off outside the menu
-## Phase 11a — speed up (v0.7.0)
+## Phase 11a — speed up (v0.7.0) — released 2026-10-23
 - [x] `swelo speed` + menu "Speed up": RAM, swap, load, uptime; apps by memory footprint (top, resident+compressed — ps RSS hid an 8 GB Gradle daemon) and by CPU; advice for swap ≥ 50 %, load > cores, uptime > 30 days; --json
 - [x] forgotten developer processes: dev runtimes whose cwd is in the Trash or gone, idle Gradle/Kotlin daemons (CPU < 1 %), Playwright/MCP browsers and headless runs > 1 day, MCP servers whose parent died; helpers folded into their root; own processes only. `speed --stop` / menu: tick → SIGTERM, still-running ones reported, never SIGKILL. Claude Code sessions are not offered (they are live terminal tabs here)
-- [ ] Docker resources: allocated RAM/CPU vs physical, running containers, where the setting lives
-- [ ] Homebrew services always on: tick → brew services stop
+- [x] Docker: memory limit vs RAM (settings read only with Full Disk Access), CPUs, Resource Saver, running containers with live CPU/memory, idle ones listed with the `docker stop` line; advice when Docker may take ≥ 40 % of RAM
+- [x] Homebrew services kept running: listed; menu/--stop ticks → `brew services stop` after confirmation (undo shown)
 ## Phase 11b — startup items and leftovers (v0.8.0)
 - [ ] launch agents/daemons mapped to apps; orphans and updaters flagged; user agents bootout (undo: bootstrap), system daemons as sudo steps
 - [ ] app leftovers in ~/Library whose app is gone: report, tick → Trash
