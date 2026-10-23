@@ -97,7 +97,7 @@ Add:
 - [x] leftovers of removed apps as an uninstall provider (`--only leftover`, menu kind "Leftovers…"): ~/Library entries named by a bundle id no installed app carries, that Spotlight cannot find and nothing touched for 30 days; one package per id, removal = `/usr/bin/trash` of all its folders. Here: Teams 1.2 GB, Spark 736 MB, Adobe, OneDrive, UTM…
 ## Phase 12 — more cleaning (v0.9.0)
 - [x] `trash` rule (🟡): items that have sat in the Trash for 30+ days, aged by ctime (when they were moved there — verified on APFS), .DS_Store ignored. `status` reports APFS local snapshots: OS-update ones are left to macOS, Time Machine ones get the `tmutil deletelocalsnapshots` hint (no sudo task: the only snapshots here are OS-update ones, not deletable)
-- [ ] simulator devices unused 90 days (--risky), erase option
+- [x] simulator devices as an uninstall provider (`--only simdevice`, menu kind): every device with its data size and last boot; devices booted in the last 90 days carry a "booted recently" warning in the review, booted ones cannot be removed; removal = `xcrun simctl delete` (Xcode recreates a device in a click; erase was dropped — delete frees the same data and the list stays honest). Here: 12 devices, 7.4 GB
 - [ ] old Xcode DeviceSupport and Archives > 90 days (--risky)
 - [ ] analyze: files > 1 GB not opened in 180 days (report)
 - [ ] analyze --dupes: same size + hash, > 50 MB (report, tick → Trash)

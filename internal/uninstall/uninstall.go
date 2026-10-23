@@ -84,6 +84,7 @@ var Providers = []Provider{
 	{"app", apps},
 	{"leftover", leftovers},
 	{"simruntime", simRuntimes},
+	{"simdevice", simDevices},
 	{"android", androidSDK},
 	{"brew", brew},
 	{"node", nodeVersions},
