@@ -80,7 +80,7 @@ func TestSafe(t *testing.T) {
 
 func TestPicker(t *testing.T) {
 	i18n.Set("en")
-	p := NewPicker("t", []PickItem{{"g", "a", ""}, {"g", "b", ""}, {"h", "c", ""}})
+	p := NewPicker("t", []PickItem{{Group: "g", Label: "a"}, {Group: "g", Label: "b"}, {Group: "h", Label: "c"}})
 	press := func(k tea.KeyMsg) { p.Update(k) }
 	press(tea.KeyMsg{Type: tea.KeySpace, Runes: []rune(" ")})
 	press(tea.KeyMsg{Type: tea.KeyDown})
@@ -90,7 +90,7 @@ func TestPicker(t *testing.T) {
 	if !p.Selected[0] || p.Selected[1] || !p.Selected[2] || p.Cancelled {
 		t.Fatalf("selected = %v cancelled = %v", p.Selected, p.Cancelled)
 	}
-	q := NewPicker("t", []PickItem{{"g", "a", ""}})
+	q := NewPicker("t", []PickItem{{Group: "g", Label: "a"}})
 	q.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	if !q.Cancelled {
 		t.Fatal("q must cancel")

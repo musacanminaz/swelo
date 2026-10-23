@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/musacanminaz/swelo/internal/i18n"
 )
 
 func key(s string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)} }
@@ -27,7 +28,7 @@ func TestPickerFilterAllNone(t *testing.T) {
 	for _, r := range "chrome" {
 		p.Update(key(string(r)))
 	}
-	if len(p.visible) != 2 || p.visible[0] != 0 || p.visible[1] != 2 {
+	if len(p.visible) != 2 || p.visible[0].item != 0 || p.visible[1].item != 2 {
 		t.Fatalf("visible = %v", p.visible)
 	}
 	if v := p.View(); !strings.Contains(v, "/ chrome_") || strings.Contains(v, "Firefox") {
@@ -67,5 +68,44 @@ func TestPickerFilterAllNone(t *testing.T) {
 	p.Update(tea.KeyMsg{Type: tea.KeyPgDown})
 	if p.cursor != 3 {
 		t.Fatalf("pgdown past the end: cursor = %d", p.cursor)
+	}
+}
+
+func TestPickerChildren(t *testing.T) {
+	i18n.Set("en")
+	p := NewPicker("Pick", []PickItem{
+		{Label: "node", Children: []PickItem{{Label: "a", Size: 6}, {Label: "b", Size: 4}}},
+		{Label: "brew", Size: 2},
+	})
+	p.Update(key(" ")) // ticks every child
+	if !p.Selected[0] || !p.Sub[0][0] || !p.Sub[0][1] {
+		t.Fatalf("space on the item: selected=%v sub=%v", p.Selected, p.Sub)
+	}
+	if v := p.View(); !strings.Contains(v, "▸") || strings.Contains(v, "6 B") {
+		t.Fatalf("collapsed view shows children:\n%s", v)
+	}
+	p.Update(tea.KeyMsg{Type: tea.KeyRight})
+	if len(p.visible) != 4 || p.cursor != 0 {
+		t.Fatalf("expanded: visible=%v cursor=%d", p.visible, p.cursor)
+	}
+	p.Update(tea.KeyMsg{Type: tea.KeyDown})
+	p.Update(key(" ")) // untick child a
+	if p.Sub[0][0] || !p.Sub[0][1] || !p.Selected[0] {
+		t.Fatalf("child untick: sub=%v selected=%v", p.Sub, p.Selected)
+	}
+	if v := p.View(); !strings.Contains(v, "[-]") || !strings.Contains(v, "1 selected · 4 B") {
+		t.Fatalf("partial view:\n%s", v)
+	}
+	p.Update(tea.KeyMsg{Type: tea.KeyLeft}) // collapses and returns to the item
+	if len(p.visible) != 2 || p.cursor != 0 {
+		t.Fatalf("collapsed: visible=%v cursor=%d", p.visible, p.cursor)
+	}
+	p.Update(key(" ")) // not all ticked → ticks all
+	if !p.Sub[0][0] || !p.Sub[0][1] {
+		t.Fatalf("retick: %v", p.Sub)
+	}
+	p.Update(key("n"))
+	if p.Selected[0] || p.Sub[0][1] || p.Selected[1] {
+		t.Fatalf("n: selected=%v sub=%v", p.Selected, p.Sub)
 	}
 }

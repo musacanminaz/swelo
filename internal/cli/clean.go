@@ -113,7 +113,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 
 	if o.pick {
 		var ok, recent bool
-		if results, total, recent, ok = pickResults(results, eng.Guard.RecentDays); !ok {
+		if results, total, recent, ok = pickResults(results, eng.Guard.RecentDays, home); !ok {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
 			return nil
 		}
@@ -286,21 +286,33 @@ func lastLines(s string, n int) string {
 // pickResults lets the user tick rules (🟢 ticked, 🟡 and recently changed
 // projects not) and returns the ticked results with their total; recent is
 // true if recently changed projects were ticked, ok false if cancelled.
-func pickResults(results []clean.Result, recentDays int) (chosen []clean.Result, total int64, recent, ok bool) {
-	items, selected, resolve := cleanRows(results, recentDays)
+func pickResults(results []clean.Result, recentDays int, home string) (chosen []clean.Result, total int64, recent, ok bool) {
+	items, sub, resolve := cleanRows(results, recentDays, home)
 	pk := ui.NewPicker(i18n.T("pick.clean"), items)
-	copy(pk.Selected, selected)
+	for i, s := range sub {
+		pk.Selected[i] = len(s) > 0 && s[0]
+		copy(pk.Sub[i], s)
+	}
 	if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
 		return nil, 0, false, false
 	}
-	chosen, total, recent = resolve(pk.Selected)
+	for i := range sub {
+		if pk.Sub[i] == nil {
+			sub[i] = []bool{pk.Selected[i]}
+		} else {
+			sub[i] = pk.Sub[i]
+		}
+	}
+	chosen, total, recent = resolve(sub)
 	return chosen, total, recent, true
 }
 
-// cleanRows builds the pick list: one row per rule with something to free,
-// then one row per rule for projects skipped only for being recent.
-func cleanRows(results []clean.Result, recentDays int) (items []ui.PickItem, selected []bool,
-	resolve func([]bool) ([]clean.Result, int64, bool)) {
+// cleanRows builds the pick list: one row per rule with something to free
+// (its items as children, so single ones can be unticked), then one row per
+// rule for projects skipped only for being recent. sub[i] holds the initial
+// ticks of row i: one per child, or a single one for a rule without items.
+func cleanRows(results []clean.Result, recentDays int, home string) (items []ui.PickItem, sub [][]bool,
+	resolve func([][]bool) ([]clean.Result, int64, bool)) {
 	var idx []int
 	for _, risk := range []string{rules.Safe, rules.Risky} {
 		for i, r := range results {
@@ -313,11 +325,11 @@ func cleanRows(results []clean.Result, recentDays int) (items []ui.PickItem, sel
 	items = make([]ui.PickItem, len(idx))
 	for n, i := range idx {
 		r := results[i]
-		size := ui.Bytes(r.Size)
+		items[n] = ui.PickItem{Group: i18n.T("group." + r.Rule.Risk), Label: r.Rule.ID, Detail: r.Rule.Description(i18n.Lang()),
+			Size: r.Size, Children: children(r.Items, home)}
 		if !sizeKnown(r) {
-			size = "?"
+			items[n].Detail += " " + i18n.T("pick.sizeunknown")
 		}
-		items[n] = ui.PickItem{Group: i18n.T("group." + r.Rule.Risk), Label: fmt.Sprintf("%9s  %s", size, r.Rule.ID), Detail: r.Rule.Description(i18n.Lang())}
 	}
 	// one more row per rule for the projects skipped only for being recent
 	recentItems := map[int][]clean.Item{}
@@ -342,22 +354,38 @@ func cleanRows(results []clean.Result, recentDays int) (items []ui.PickItem, sel
 		}
 		if len(names) > 0 {
 			recentIdx = append(recentIdx, i)
-			items = append(items, ui.PickItem{Group: fmt.Sprintf(i18n.T("group.recent"), recentDays),
-				Label:  fmt.Sprintf("%9s  %s", ui.Bytes(size), r.Rule.ID),
-				Detail: fmt.Sprintf(i18n.T("pick.recent"), len(names), ui.Safe(strings.Join(names, ", ")))})
+			items = append(items, ui.PickItem{Group: fmt.Sprintf(i18n.T("group.recent"), recentDays), Label: r.Rule.ID,
+				Detail:   fmt.Sprintf(i18n.T("pick.recent"), len(names), ui.Safe(strings.Join(names, ", "))),
+				Children: children(recentItems[i], home)})
 		}
 	}
-	selected = make([]bool, len(items))
-	for n, i := range idx {
-		selected[n] = clean.Selected(results[i], false)
+	sub = make([][]bool, len(items))
+	for n, it := range items {
+		sub[n] = make([]bool, max(1, len(it.Children)))
+		if n < len(idx) && clean.Selected(results[idx[n]], false) {
+			for j := range sub[n] {
+				sub[n][j] = true
+			}
+		}
 	}
-	resolve = func(selected []bool) (chosen []clean.Result, total int64, recent bool) {
-		return resolveRows(results, idx, recentIdx, recentItems, selected)
+	resolve = func(sub [][]bool) (chosen []clean.Result, total int64, recent bool) {
+		return resolveRows(results, idx, recentIdx, recentItems, sub)
 	}
-	return items, selected, resolve
+	return items, sub, resolve
 }
 
-func resolveRows(results []clean.Result, idx, recentIdx []int, recentItems map[int][]clean.Item, selected []bool) (chosen []clean.Result, total int64, recent bool) {
+// children turns a rule's items into pick rows (path and size).
+func children(items []clean.Item, home string) []ui.PickItem {
+	out := make([]ui.PickItem, len(items))
+	for j, it := range items {
+		out[j] = ui.PickItem{Label: short(it.Path, home), Size: it.Size}
+	}
+	return out
+}
+
+// resolveRows turns the ticks (sub[row][child]) back into results holding
+// only the ticked items.
+func resolveRows(results []clean.Result, idx, recentIdx []int, recentItems map[int][]clean.Item, sub [][]bool) (chosen []clean.Result, total int64, recent bool) {
 	picked := map[int]*clean.Result{}
 	var order []int
 	take := func(i int) *clean.Result {
@@ -369,19 +397,29 @@ func resolveRows(results []clean.Result, idx, recentIdx []int, recentItems map[i
 		}
 		return picked[i]
 	}
-	for n, i := range idx {
-		if selected[n] {
-			r := take(i)
-			r.Items, r.Size = append([]clean.Item(nil), results[i].Items...), results[i].Size
-		}
-	}
-	for n, i := range recentIdx {
-		if selected[len(idx)+n] {
-			r := take(i)
-			for _, it := range recentItems[i] {
+	add := func(i int, items []clean.Item, ticks []bool) bool {
+		added := false
+		for j, it := range items {
+			if j < len(ticks) && ticks[j] {
+				r := take(i)
 				r.Items = append(r.Items, it)
 				r.Size += it.Size
+				added = true
 			}
+		}
+		return added
+	}
+	for n, i := range idx {
+		if len(results[i].Items) == 0 { // a command rule: one tick for the whole rule
+			if len(sub[n]) > 0 && sub[n][0] {
+				take(i).Size = results[i].Size
+			}
+			continue
+		}
+		add(i, results[i].Items, sub[n])
+	}
+	for n, i := range recentIdx {
+		if add(i, recentItems[i], sub[len(idx)+n]) {
 			recent = true
 		}
 	}

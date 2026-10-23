@@ -268,6 +268,8 @@ var msgs = map[string][2]string{
 	"pick.count":               {"%d selected", "%d seçili"},
 	"pick.help":                {"↑↓ move · space select · a all · n none · / filter · enter continue · q cancel", "↑↓ gez · boşluk seç · a tümü · n hiçbiri · / filtre · enter devam · q iptal"},
 	"pick.help.filter":         {"type to filter · enter keep · esc clear", "filtrelemek için yazın · enter tut · esc temizle"},
+	"pick.help.expand":         {"→ open ← close", "→ aç ← kapat"},
+	"pick.sizeunknown":         {"(size known after it runs)", "(boyutu çalışınca belli olur)"},
 	"pick.matches":             {"%d of %d", "%d / %d"},
 	"pick.title":               {"Select what to uninstall", "Kaldırılacakları seçin"},
 	"pick.clean":               {"Select what to delete (🟢 ticked, 🟡 not)", "Silinecekleri seçin (🟢 seçili, 🟡 değil)"},

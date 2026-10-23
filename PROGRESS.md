@@ -72,7 +72,7 @@ Remove/simplify:
 - [x] intro text fixed (confirmation instead of --apply; recent projects skipped unless ticked)
 - [x] status trend sentence ("3 days ago 91.1 GB was free, now 53.0 GB (−38.1 GB)"); `completion`/`help` hidden in help. Analyze header checked: it is right-aligned over the numbers, no change
 Add:
-- [ ] picker: expand a rule (→/Enter) and untick single items
+- [x] picker: a rule row expands with → (← closes) into its items; single items can be unticked ([-] = some), sizes shown per row and summed in the header
 - [x] picker keys: a all, n none (visible rows), / filter on label/detail/group (Enter keeps, Esc clears), PgUp/PgDn/Home/End
 - [ ] uninstall: choose a kind first (apps / Homebrew / Docker images …)
 - [ ] menu "Quick clean": safe rules, one confirmation, no picker
