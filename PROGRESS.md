@@ -87,3 +87,17 @@ Add:
 ## Phase 10 — speed (v0.6.1) — released 2026-10-23
 - [x] optimize scans artifacts only when Time Machine is set up (here: 45 s → 10 s); the plan box says so
 - [x] sizes measured once per menu session (Analyze then Clean: 142 items measured in 0.0 s instead of ~25 s); the cache is emptied after clean apply, uninstall and the tree browser, and is off outside the menu
+## Phase 11a — speed up (v0.7.0)
+- [x] `swelo speed` + menu "Speed up": RAM, swap, load, uptime; apps by memory footprint (top, resident+compressed — ps RSS hid an 8 GB Gradle daemon) and by CPU; advice for swap ≥ 50 %, load > cores, uptime > 30 days; --json
+- [ ] stale developer processes (cwd in Trash/deleted, MCP/headless Chrome > 1 day, idle Gradle/Kotlin daemons, old claude/code sessions): tick → SIGTERM / tool's own stop; own processes only
+- [ ] Docker resources: allocated RAM/CPU vs physical, running containers, where the setting lives
+- [ ] Homebrew services always on: tick → brew services stop
+## Phase 11b — startup items and leftovers (v0.8.0)
+- [ ] launch agents/daemons mapped to apps; orphans and updaters flagged; user agents bootout (undo: bootstrap), system daemons as sudo steps
+- [ ] app leftovers in ~/Library whose app is gone: report, tick → Trash
+## Phase 12 — more cleaning (v0.9.0)
+- [ ] Trash (--risky, > 30 days) and APFS local snapshots (report; delete = sudo step)
+- [ ] simulator devices unused 90 days (--risky), erase option
+- [ ] old Xcode DeviceSupport and Archives > 90 days (--risky)
+- [ ] analyze: files > 1 GB not opened in 180 days (report)
+- [ ] analyze --dupes: same size + hash, > 50 MB (report, tick → Trash)

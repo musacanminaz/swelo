@@ -57,7 +57,7 @@ func newRoot() *cobra.Command {
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
 	root.RegisterFlagCompletionFunc("lang", cobra.FixedCompletions([]string{"tr", "en"}, cobra.ShellCompDirectiveNoFileComp))
-	root.AddCommand(permissionsCmd(), rulesCmd(), configCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
+	root.AddCommand(permissionsCmd(), rulesCmd(), configCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), speedCmd(), statusCmd(), historyCmd())
 	root.DisableFlagsInUseLine = true // no English "[flags]" in the usage line
 	for _, c := range root.Commands() {
 		c.DisableFlagsInUseLine = true
@@ -97,7 +97,7 @@ func welcome(w io.Writer) {
 	cmds := []struct {
 		name  string
 		ready bool
-	}{{"analyze", true}, {"clean", true}, {"optimize", true}, {"uninstall", true}, {"status", true}, {"rules", true}, {"permissions", true}}
+	}{{"analyze", true}, {"clean", true}, {"optimize", true}, {"speed", true}, {"uninstall", true}, {"status", true}, {"rules", true}, {"permissions", true}}
 	for _, c := range cmds {
 		soon := ""
 		if !c.ready {
