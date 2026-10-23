@@ -25,7 +25,7 @@ confirmed, and `sudo -k` runs when swelo quits) and opens the Full Disk Access s
 
 | Command | | Status |
 |---|---|---|
-| `swelo` | Opens a menu on a terminal: pick a command with ↑↓ and Enter, tick what to delete or uninstall, confirm by choosing — no flags to type. Prints the overview when not on a terminal | ✅ |
+| `swelo` | Opens a menu on a terminal: Quick clean (safe rules, one confirmation), Clean (tick rules, open a rule with → to keep single items), Analyze, Folder tree, Uninstall (pick a kind, then tick), Optimize, Status, History, Permissions (grant admin rights for the session, open Full Disk Access). Pick lists: space ticks, `a`/`n` all/none, `/` filters. Prints the overview when not on a terminal | ✅ |
 | `swelo permissions` | Every permission (Full Disk Access, sudo) explained | ✅ |
 | `swelo clean` | Clean regenerable files; dry run unless `--apply`, `--pick` to tick rules | ✅ |
 | `swelo analyze` | Where disk space went: categories, files > 1 GB, projects; `--tree` browses folders and moves picks to the Trash | ✅ |
@@ -48,7 +48,7 @@ Prebuilt binaries are on the [releases page](https://github.com/musacanminaz/swe
 ## Quick start
 
 ```sh
-swelo                      # menu: choose, tick, confirm
+swelo                      # menu: Quick clean, Clean (tick), Analyze, Uninstall …
 swelo clean                # dry run: lists what can be freed, deletes nothing
 swelo clean --apply        # deletes the 🟢 items after you confirm
 swelo clean --apply --risky --only docker,tools

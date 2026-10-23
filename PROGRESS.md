@@ -63,7 +63,7 @@ Formula/swelo.rb after tagging.
 Waiting on notability: ≥75 stars or ≥30 forks/watchers, and the repo older than 30 days (eligible from 2026-11-19).
 Status on 2026-10-20: 0 stars, 0 forks, 0 watchers, created 2026-10-20.
 When eligible: `brew create`-style formula (the tap formula already builds from source with a test), `brew audit --new --strict --online swelo`, PR to Homebrew/homebrew-core.
-## Phase 8 — user experience (v0.5.0)
+## Phase 8 — user experience (v0.5.0) — released 2026-10-23
 Remove/simplify:
 - [x] clean output: rules with nothing to delete are one line (`● flutter — … · skipped 5: …`); rules with no findings at all are counted at the end
 - [x] plan box "Scan" line: `~ (16 project folders), ~/Library/Caches, …` (listed when ≤ 3 roots)
