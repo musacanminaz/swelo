@@ -74,7 +74,7 @@ Remove/simplify:
 Add:
 - [x] picker: a rule row expands with → (← closes) into its items; single items can be unticked ([-] = some), sizes shown per row and summed in the header
 - [x] picker keys: a all, n none (visible rows), / filter on label/detail/group (Enter keeps, Esc clears), PgUp/PgDn/Home/End
-- [ ] uninstall: choose a kind first (apps / Homebrew / Docker images …)
+- [x] uninstall --pick without --only asks the kind first (Everything / apps / Homebrew / …); only that provider is scanned
 - [ ] menu "Quick clean": safe rules, one confirmation, no picker
 - [ ] menu header: last cleanup ("3 days ago, 5.1 GB")
 ## Phase 9 — CLI style (v0.6.0)

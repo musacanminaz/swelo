@@ -337,6 +337,9 @@ var msgs = map[string][2]string{
 	"uninstall.unknown":        {"nothing called %q (run `swelo uninstall` to see the names)", "%q adında bir şey yok (adları görmek için: swelo uninstall)"},
 	"uninstall.ambiguous":      {"%q matches several packages, use an id: %s", "%q birden çok paketle eşleşiyor, id kullanın: %s"},
 	"uninstall.needtty":        {"--pick needs an interactive terminal; use --remove <id,...> in scripts", "--pick etkileşimli terminal ister; script'lerde --remove <id,...> kullanın"},
+	"uninstall.kind":           {"What do you want to uninstall?", "Ne kaldırmak istiyorsunuz?"},
+	"uninstall.kind.all":       {"Everything", "Hepsi"},
+	"uninstall.kind.all.desc":  {"every kind in one list (slower scan)", "tüm türler tek listede (tarama daha uzun)"},
 	"uninstall.next2":          {"To remove: swelo uninstall --pick (choose interactively) or --remove <name,...>", "Kaldırmak için: swelo uninstall --pick (interaktif seçim) veya --remove <ad,...>"},
 
 	"plan.delete.uninstall.sel": {"only what you select, after you review every command and confirm", "sadece seçtikleriniz; her komutu görüp onayladıktan sonra"},

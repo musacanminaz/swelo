@@ -49,6 +49,21 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 		return errors.New(i18n.T("uninstall.needtty"))
 	}
 	introGate(in, w, stdinIsTerminal())
+	if o.pick && len(o.only) == 0 {
+		// one kind at a time keeps the list short (and the scan quick)
+		items := []ui.PickItem{{Label: i18n.T("uninstall.kind.all"), Detail: i18n.T("uninstall.kind.all.desc")}}
+		for _, p := range uninstall.Providers {
+			items = append(items, ui.PickItem{Label: i18n.T("prov." + p.ID)})
+		}
+		fmt.Fprintln(w)
+		switch k := ui.Choose(i18n.T("uninstall.kind"), items); {
+		case k < 0:
+			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
+			return nil
+		case k > 0:
+			o.only = []string{uninstall.Providers[k-1].ID}
+		}
+	}
 	_, cfg, err := rules.Load(home)
 	if err != nil {
 		return err
@@ -57,9 +72,16 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 	if o.pick || len(o.remove) > 0 {
 		del = i18n.T("plan.delete.uninstall.sel")
 	}
+	scan := []string{i18n.T("plan.scan.uninstall")}
+	if len(o.only) > 0 {
+		scan = scan[:0]
+		for _, id := range o.only {
+			scan = append(scan, i18n.T("prov."+id))
+		}
+	}
 	ui.ShowPlan(w, ui.Plan{
 		Title:    "swelo uninstall",
-		Scan:     []string{i18n.T("plan.scan.uninstall")},
+		Scan:     scan,
 		Read:     i18n.T("plan.read.uninstall"),
 		Delete:   del,
 		Perm:     i18n.T("plan.perm.uninstall"),
