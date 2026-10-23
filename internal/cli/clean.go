@@ -47,13 +47,13 @@ func cleanCmd() *cobra.Command {
 		},
 	}
 	f := c.Flags()
-	f.BoolVar(&o.apply, "apply", false, "delete the listed items (asks first)")
-	f.BoolVar(&o.risky, "risky", false, "include 🟡 rules")
-	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")
-	f.BoolVar(&o.all, "all", false, "list every item, not only the largest")
-	f.BoolVar(&o.pick, "pick", false, "choose what to delete interactively")
-	f.StringSliceVar(&o.only, "only", nil, "only these rule ids or groups (same as naming them after clean; swelo rules lists them)")
-	f.IntVar(&o.recentDays, "recent-days", -1, "skip projects changed within N days (0 = off; default from config, 7)")
+	f.BoolVar(&o.apply, "apply", false, i18n.T("flag.clean.apply"))
+	f.BoolVar(&o.risky, "risky", false, i18n.T("flag.clean.risky"))
+	f.BoolVar(&o.yes, "yes", false, i18n.T("flag.yes"))
+	f.BoolVar(&o.all, "all", false, i18n.T("flag.clean.all"))
+	f.BoolVar(&o.pick, "pick", false, i18n.T("flag.clean.pick"))
+	f.StringSliceVar(&o.only, "only", nil, i18n.T("flag.clean.only"))
+	f.IntVar(&o.recentDays, "recent-days", -1, i18n.T("flag.clean.recent"))
 	c.RegisterFlagCompletionFunc("only", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
 		return ruleNames(), cobra.ShellCompDirectiveNoFileComp
 	})

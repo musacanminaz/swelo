@@ -132,7 +132,7 @@ func historyCmd() *cobra.Command {
 			return nil
 		},
 	}
-	c.Flags().IntVarP(&n, "number", "n", 30, "how many entries")
+	c.Flags().IntVarP(&n, "number", "n", 30, i18n.T("flag.history.number"))
 	return c
 }
 

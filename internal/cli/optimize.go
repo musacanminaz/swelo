@@ -27,10 +27,10 @@ func optimizeCmd() *cobra.Command {
 			return runOptimize(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), apply, yes, pick, only)
 		},
 	}
-	c.Flags().BoolVar(&apply, "apply", false, "run the listed tasks (asks first)")
-	c.Flags().BoolVar(&yes, "yes", false, "do not ask for confirmation")
-	c.Flags().BoolVar(&pick, "pick", false, "choose tasks interactively")
-	c.Flags().StringSliceVar(&only, "only", nil, "tasks: timemachine, git-gc, brew-autoremove")
+	c.Flags().BoolVar(&apply, "apply", false, i18n.T("flag.optimize.apply"))
+	c.Flags().BoolVar(&yes, "yes", false, i18n.T("flag.optimize.yes"))
+	c.Flags().BoolVar(&pick, "pick", false, i18n.T("flag.optimize.pick"))
+	c.Flags().StringSliceVar(&only, "only", nil, i18n.T("flag.optimize.only"))
 	return c
 }
 

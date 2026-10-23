@@ -21,7 +21,10 @@ var Version = "dev"
 var langFlag string
 
 // Execute runs the root command.
-func Execute() error { return newRoot().Execute() }
+func Execute() error {
+	i18n.Set(earlyLang(os.Args[1:])) // before the tree is built: help and flag texts follow it
+	return newRoot().Execute()
+}
 
 func newRoot() *cobra.Command {
 	root := &cobra.Command{
@@ -46,12 +49,19 @@ func newRoot() *cobra.Command {
 			return nil
 		},
 	}
-	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
-	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, "machine-readable output: one JSON document, no prompts (clean --apply needs --yes)")
+	root.PersistentFlags().StringVar(&langFlag, "lang", "", i18n.T("flag.lang"))
+	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, i18n.T("flag.json"))
+	root.PersistentFlags().BoolP("help", "h", false, i18n.T("flag.help"))
+	root.Flags().BoolP("version", "v", false, i18n.T("flag.version"))
+	root.SetUsageTemplate(usageTemplate())
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
 	root.RegisterFlagCompletionFunc("lang", cobra.FixedCompletions([]string{"tr", "en"}, cobra.ShellCompDirectiveNoFileComp))
 	root.AddCommand(permissionsCmd(), rulesCmd(), configCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
+	root.DisableFlagsInUseLine = true // no English "[flags]" in the usage line
+	for _, c := range root.Commands() {
+		c.DisableFlagsInUseLine = true
+	}
 	return root
 }
 

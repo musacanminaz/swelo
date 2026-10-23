@@ -40,9 +40,9 @@ func analyzeCmd() *cobra.Command {
 			return runAnalyze(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), full, top, stdinIsTerminal(), nil)
 		},
 	}
-	c.Flags().BoolVar(&full, "full", false, "also measure folders macOS protects (needs Full Disk Access)")
-	c.Flags().BoolVar(&browse, "tree", false, "browse folders interactively (ncdu-like); d moves to Trash")
-	c.Flags().IntVar(&top, "top", 10, "rows in the file and project lists")
+	c.Flags().BoolVar(&full, "full", false, i18n.T("flag.analyze.full"))
+	c.Flags().BoolVar(&browse, "tree", false, i18n.T("flag.analyze.tree"))
+	c.Flags().IntVar(&top, "top", 10, i18n.T("flag.analyze.top"))
 	return c
 }
 
