@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,7 +22,8 @@ import (
 
 type cleanOpts struct {
 	apply, risky, yes, all, pick bool
-	quick                        bool // menu "Quick clean": safe rules, one menu confirmation
+	quick                        bool      // menu "Quick clean": safe rules, one menu confirmation
+	json                         io.Writer // --json: the document goes here, nothing else is printed
 	only                         []string
 	recentDays                   int
 }
@@ -32,6 +34,10 @@ func cleanCmd() *cobra.Command {
 		Use:   "clean",
 		Short: i18n.T("cmd.clean"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if jsonFlag {
+				o.json = cmd.OutOrStdout()
+				return runClean(bufio.NewReader(os.Stdin), io.Discard, home(), o, false)
+			}
 			return runClean(bufio.NewReader(os.Stdin), cmd.OutOrStdout(), home(), o, stdinIsTerminal())
 		},
 	}
@@ -47,6 +53,9 @@ func cleanCmd() *cobra.Command {
 }
 
 func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interactive bool) error {
+	if o.json != nil && (o.pick || o.apply && !o.yes) {
+		return errors.New(i18n.T("json.noprompt"))
+	}
 	introGate(in, w, interactive)
 	rs, cfg, err := rules.Load(home)
 	if err != nil {
@@ -82,6 +91,9 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	done()
 	st.Stop()
 	before := clean.FreeBytes(home)
+	if o.json != nil {
+		return cleanToJSON(o.json, eng, results, o, before, home)
+	}
 
 	var safe, risky int64
 	quiet := 0
@@ -116,7 +128,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 		var ok, recent bool
 		if results, total, recent, ok = pickResults(results, eng.Guard.RecentDays, home); !ok {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-			return nil
+			return ErrCancelled
 		}
 		if len(results) == 0 {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("pick.none"))
@@ -132,7 +144,7 @@ func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interacti
 	}
 	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("confirm.delete"), ui.Bytes(total)), o.pick || o.quick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-		return nil
+		return ErrCancelled
 	}
 	var failed int
 	freed := eng.Apply(results, o.risky, func(r clean.Result, p string, size int64, err error) {
@@ -443,4 +455,43 @@ func ask(in *bufio.Reader, w io.Writer, q string, pick bool) bool {
 // sizeKnown: false for a command rule that cannot say what it would free.
 func sizeKnown(r clean.Result) bool {
 	return r.Rule.Kind != "command" || r.Size > 0 || len(r.Rule.SizeCmd) > 0 || len(r.Rule.SizeTextCmd) > 0
+}
+
+// cleanToJSON writes the scan (and, with --apply --yes, what was deleted).
+func cleanToJSON(out io.Writer, eng *clean.Engine, results []clean.Result, o cleanOpts, before int64, home string) error {
+	doc := cleanJSON{DryRun: !o.apply, FreeBytes: before, Rules: []jsonRule{}}
+	for _, r := range results {
+		if r.Rule.Disabled || strings.HasSuffix(r.Note, "not installed") {
+			continue
+		}
+		jr := jsonRule{ID: r.Rule.ID, Group: r.Rule.Group, Risk: r.Rule.Risk, Kind: r.Rule.Kind,
+			Description: r.Rule.Description(i18n.Lang()), Bytes: r.Size, Note: r.Note, Output: r.Show, Items: []jsonItem{}}
+		for _, it := range r.Items {
+			jr.Items = append(jr.Items, jsonItem{Path: it.Path, Project: it.Project, Bytes: it.Size})
+		}
+		for _, it := range r.Skips {
+			jr.Skipped = append(jr.Skipped, jsonItem{Path: it.Path, Project: it.Project, Bytes: it.Size, Skipped: it.Skip})
+		}
+		switch {
+		case clean.Selected(r, false):
+			doc.SafeBytes += r.Size
+		case clean.Selected(r, true):
+			doc.RiskyBytes += r.Size
+		}
+		doc.Rules = append(doc.Rules, jr)
+	}
+	if o.apply {
+		doc.FreedBytes = eng.Apply(results, o.risky, func(r clean.Result, p string, size int64, err error) {
+			d := jsonDeleted{Rule: r.Rule.ID, Path: p, Bytes: size}
+			if r.Rule.Kind == "command" {
+				d.Path = "" // p is the command output
+			}
+			if err != nil {
+				d.Error = err.Error()
+			}
+			doc.Deleted = append(doc.Deleted, d)
+		})
+		doc.FreeAfter = clean.FreeBytes(home)
+	}
+	return writeJSON(out, doc)
 }

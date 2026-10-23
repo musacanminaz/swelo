@@ -130,7 +130,7 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bo
 		}
 		if _, err := tea.NewProgram(pk, tea.WithAltScreen()).Run(); err != nil || pk.Cancelled {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-			return nil
+			return ErrCancelled
 		}
 		ready = 0
 		for n, i := range idx {
@@ -149,7 +149,7 @@ func runOptimize(in *bufio.Reader, w io.Writer, home string, apply, yes, pick bo
 	}
 	if !yes && !ask(in, w, fmt.Sprintf(i18n.T("opt.confirm"), ready), pick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-		return nil
+		return ErrCancelled
 	}
 	for _, t := range tasks {
 		if !t.Ready {

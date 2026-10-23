@@ -59,7 +59,7 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 		switch k := ui.Choose(i18n.T("uninstall.kind"), items); {
 		case k < 0:
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-			return nil
+			return ErrCancelled
 		case k > 0:
 			o.only = []string{uninstall.Providers[k-1].ID}
 		}
@@ -115,7 +115,7 @@ func runUninstall(in *bufio.Reader, w io.Writer, home string, o uninstallOpts) e
 		}
 		if pk.Cancelled {
 			fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-			return nil
+			return ErrCancelled
 		}
 		for i, sel := range pk.Selected {
 			if sel {
@@ -179,7 +179,7 @@ func reviewAndRemove(in *bufio.Reader, w io.Writer, chosen []uninstall.Package, 
 	fmt.Fprintln(w)
 	if !o.yes && !ask(in, w, fmt.Sprintf(i18n.T("uninstall.confirm"), len(chosen), ui.Bytes(total)), o.pick) {
 		fmt.Fprintf(w, " %s\n\n", i18n.T("cancelled"))
-		return nil
+		return ErrCancelled
 	}
 	sudo := func(p uninstall.Package) error {
 		return ui.RunSudo(in, w, ui.SudoStep{

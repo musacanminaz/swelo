@@ -28,20 +28,71 @@ func statusCmd() *cobra.Command {
 		Use:   "status",
 		Short: i18n.T("cmd.status"),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if jsonFlag {
+				return writeJSON(cmd.OutOrStdout(), statusData(home(), stateDir(), time.Now()))
+			}
 			runStatus(cmd.OutOrStdout(), home(), stateDir(), time.Now())
 			return nil
 		},
 	}
 }
 
-func runStatus(w io.Writer, home, dir string, now time.Time) {
+// statusData gathers what status shows: disk, Docker's disk image, the
+// free-space trend and cleanups per day (newest first).
+func statusData(home, dir string, now time.Time) statusJSON {
+	var d statusJSON
 	var st syscall.Statfs_t
 	syscall.Statfs(home, &st)
 	total, free := int64(st.Blocks)*int64(st.Bsize), int64(st.Bavail)*int64(st.Bsize)
-	used := 0.0
+	d.Disk.TotalBytes, d.Disk.FreeBytes = total, free
 	if total > 0 {
-		used = float64(total-free) / float64(total) * 100
+		d.Disk.UsedPercent = float64(total-free) / float64(total) * 100
 	}
+	if alloc, maxSize, ok := dockerRaw(home, perm.FullDiskAccess(home)); ok {
+		d.DockerImage = &struct {
+			AllocatedBytes int64 `json:"allocated_bytes"`
+			MaxBytes       int64 `json:"max_bytes"`
+		}{alloc, maxSize}
+	}
+	cutoff := now.AddDate(0, 0, -30)
+	for _, s := range state.Snapshots(dir) {
+		if s.Time.After(cutoff) && now.Sub(s.Time) >= 24*time.Hour { // a trend needs at least a day
+			d.Trend = &struct {
+				Since         time.Time `json:"since"`
+				FreeBytesThen int64     `json:"free_bytes_then"`
+				DeltaBytes    int64     `json:"delta_bytes"`
+			}{s.Time, s.Free, free - s.Free}
+			break
+		}
+	}
+	byDay := map[string]int64{}
+	count := map[string]int{}
+	for _, r := range state.History(dir) {
+		if r.Succeeded() {
+			day := r.Time.Local().Format("2006-01-02")
+			byDay[day] += r.Bytes
+			count[day]++
+		}
+	}
+	days := make([]string, 0, len(byDay))
+	for day := range byDay {
+		days = append(days, day)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(days)))
+	d.Cleanups = make([]struct {
+		Day   string `json:"day"`
+		Bytes int64  `json:"bytes"`
+		Items int    `json:"items"`
+	}, len(days))
+	for i, day := range days {
+		d.Cleanups[i].Day, d.Cleanups[i].Bytes, d.Cleanups[i].Items = day, byDay[day], count[day]
+	}
+	return d
+}
+
+func runStatus(w io.Writer, home, dir string, now time.Time) {
+	d := statusData(home, dir, now)
+	total, free, used := d.Disk.TotalBytes, d.Disk.FreeBytes, d.Disk.UsedPercent
 	mark := ui.Green
 	if used >= 90 {
 		mark = ui.Red
@@ -50,51 +101,26 @@ func runStatus(w io.Writer, home, dir string, now time.Time) {
 	}
 	fmt.Fprintf(w, "\n %s %s %s / %s (%s)\n", ui.Bold(i18n.T("disk")), mark(ui.Bytes(free)+" "+i18n.T("status.free")),
 		ui.Bytes(total-free), ui.Bytes(total), mark(fmt.Sprintf("%.0f%%", used)))
-	if d := dockerImage(home, perm.FullDiskAccess(home)); d != "" {
-		fmt.Fprintf(w, "   %s\n", ui.Dim(d))
+	if d.DockerImage != nil {
+		fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("analyze.docker"), ui.Bytes(d.DockerImage.AllocatedBytes), ui.Bytes(d.DockerImage.MaxBytes))))
 	}
-
-	// free space trend from snapshots
-	snaps := state.Snapshots(dir)
-	cutoff := now.AddDate(0, 0, -30)
-	for _, s := range snaps {
-		if s.Time.After(cutoff) && now.Sub(s.Time) >= 24*time.Hour { // a trend needs at least a day
-			delta := free - s.Free
-			sign := "+"
-			if delta < 0 {
-				sign, delta = "−", -delta
-			}
-			fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("status.trend"), ago(s.Time), ui.Bytes(s.Free), ui.Bytes(free), sign+ui.Bytes(delta))))
-			break
+	if t := d.Trend; t != nil {
+		delta, sign := t.DeltaBytes, "+"
+		if delta < 0 {
+			sign, delta = "−", -delta
 		}
+		fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("status.trend"), ago(t.Since), ui.Bytes(t.FreeBytesThen), ui.Bytes(free), sign+ui.Bytes(delta))))
 	}
-
-	// cleanups per day
-	hist := state.History(dir)
-	byDay := map[string]int64{}
-	count := map[string]int{}
-	for _, r := range hist {
-		if r.Succeeded() {
-			d := r.Time.Local().Format("2006-01-02")
-			byDay[d] += r.Bytes
-			count[d]++
-		}
-	}
-	if len(byDay) == 0 {
+	if len(d.Cleanups) == 0 {
 		fmt.Fprintf(w, "\n %s\n\n", ui.Dim(i18n.T("status.never")))
 		return
 	}
-	days := make([]string, 0, len(byDay))
-	for d := range byDay {
-		days = append(days, d)
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(days)))
 	fmt.Fprintf(w, "\n %s\n", ui.Bold(i18n.T("status.recent")))
-	for i, d := range days {
+	for i, c := range d.Cleanups {
 		if i == 5 {
 			break
 		}
-		fmt.Fprintf(w, "   %s  %9s  %s\n", d, ui.Bytes(byDay[d]), ui.Dim(fmt.Sprintf(i18n.T("status.items"), count[d])))
+		fmt.Fprintf(w, "   %s  %9s  %s\n", c.Day, ui.Bytes(c.Bytes), ui.Dim(fmt.Sprintf(i18n.T("status.items"), c.Items)))
 	}
 	fmt.Fprintf(w, "\n %s\n\n", ui.Dim(i18n.T("status.more")))
 }

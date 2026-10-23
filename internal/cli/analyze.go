@@ -159,19 +159,28 @@ func runAnalyze(in *bufio.Reader, w io.Writer, home string, full bool, top int, 
 
 // dockerImage describes Docker Desktop's disk image: allocated vs. maximum size.
 func dockerImage(home string, allowed bool) string {
-	if !allowed {
+	alloc, maxSize, ok := dockerRaw(home, allowed)
+	if !ok {
 		return ""
+	}
+	return fmt.Sprintf(i18n.T("analyze.docker"), ui.Bytes(alloc), ui.Bytes(maxSize))
+}
+
+// dockerRaw: allocated and maximum size of Docker Desktop's disk image.
+func dockerRaw(home string, allowed bool) (alloc, maxSize int64, ok bool) {
+	if !allowed {
+		return 0, 0, false
 	}
 	p := filepath.Join(home, "Library", "Containers", "com.docker.docker", "Data", "vms", "0", "data", "Docker.raw")
 	info, err := os.Stat(p)
 	if err != nil {
-		return ""
+		return 0, 0, false
 	}
 	st, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
-		return ""
+		return 0, 0, false
 	}
-	return fmt.Sprintf(i18n.T("analyze.docker"), ui.Bytes(st.Blocks*512), ui.Bytes(info.Size()))
+	return st.Blocks * 512, info.Size(), true
 }
 
 type projectRow struct {

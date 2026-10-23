@@ -40,6 +40,7 @@ func Execute() error {
 		},
 	}
 	root.PersistentFlags().StringVar(&langFlag, "lang", "", "output language: tr | en")
+	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, "machine-readable output: one JSON document, no prompts (clean --apply needs --yes)")
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
 	root.AddCommand(permissionsCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())

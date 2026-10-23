@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -75,7 +76,7 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 			}
 			continue
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrCancelled) {
 			fmt.Fprintf(w, " %s %s\n", ui.Red("✗"), ui.Safe(err.Error()))
 		}
 		ui.WaitEnter(in, w, i18n.T("menu.back"))
