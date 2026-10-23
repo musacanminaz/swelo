@@ -38,6 +38,7 @@ type Rule struct {
 	Children      bool              `yaml:"children"`
 	NameGlob      string            `yaml:"name_glob"`
 	OlderThanDays int               `yaml:"older_than_days"`
+	AgeBy         string            `yaml:"age_by"` // what older_than_days reads: mtime (default) or ctime (when it was moved here)
 	SkipIfChild   string            `yaml:"skip_if_child"`
 	KeepLatest    int               `yaml:"keep_latest"`
 	Requires      string            `yaml:"requires"`

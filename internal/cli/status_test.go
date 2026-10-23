@@ -37,3 +37,16 @@ func TestStatusAndHistory(t *testing.T) {
 		t.Errorf("history:\n%s", out.String())
 	}
 }
+
+func TestSnapshotNote(t *testing.T) {
+	i18n.Set("en")
+	names := localSnapshots(func(...string) (string, error) {
+		return "Snapshots for volume group containing disk /:\ncom.apple.os.update-ABC\ncom.apple.TimeMachine.2026-10-20-120000.local\n", nil
+	})
+	if len(names) != 2 || snapshotNote(names) != "2 APFS snapshots on the startup volume (1 from macOS updates; the system removes those itself) 1 are Time Machine local snapshots: `sudo tmutil deletelocalsnapshots <date>` frees them." {
+		t.Fatalf("%v: %q", names, snapshotNote(names))
+	}
+	if n := localSnapshots(func(...string) (string, error) { return "", os.ErrNotExist }); n == nil || len(n) != 0 {
+		t.Fatal("error must give an empty list")
+	}
+}

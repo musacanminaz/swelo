@@ -507,6 +507,8 @@ var msgs = map[string][2]string{
 	"cmd.history":               {"Everything swelo deleted or uninstalled", "swelo'nun sildiği veya kaldırdığı her şey"},
 	"status.free":               {"free", "boş"},
 	"status.trend":              {"%s %s was free, now %s (%s)", "%s %s boştu, şimdi %s (%s)"},
+	"status.snapshots":          {"%d APFS snapshots on the startup volume (%d from macOS updates; the system removes those itself)", "Açılış diskinde %d APFS snapshot (%d'i macOS güncellemelerinden; sistem bunları kendisi siler)"},
+	"status.snapshots.tm":       {"%d are Time Machine local snapshots: `sudo tmutil deletelocalsnapshots <date>` frees them.", "%d'i Time Machine yerel snapshot'ı: `sudo tmutil deletelocalsnapshots <tarih>` yerini açar."},
 	"status.never":              {"No cleanups yet. Start with `swelo analyze` or `swelo clean`.", "Henüz temizlik yok. `swelo analyze` veya `swelo clean` ile başlayın."},
 	"status.recent":             {"Recent cleanups", "Son temizlikler"},
 	"status.items":              {"%d items", "%d öğe"},

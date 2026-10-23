@@ -78,6 +78,7 @@ type statusJSON struct {
 		Bytes int64  `json:"bytes"`
 		Items int    `json:"items"`
 	} `json:"cleanups"`
+	Snapshots []string `json:"apfs_snapshots"` // local APFS snapshot names
 }
 
 type jsonCategory struct {

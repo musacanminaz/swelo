@@ -5,10 +5,12 @@ import (
 	"io"
 	"path/filepath"
 	"sort"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/musacanminaz/swelo/internal/i18n"
+	"github.com/musacanminaz/swelo/internal/optimize"
 	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/state"
 	"github.com/musacanminaz/swelo/internal/ui"
@@ -76,6 +78,7 @@ func statusData(home, dir string, now time.Time) statusJSON {
 		days = append(days, day)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(days)))
+	d.Snapshots = localSnapshots(optimize.Real)
 	d.Cleanups = make([]struct {
 		Day   string `json:"day"`
 		Bytes int64  `json:"bytes"`
@@ -101,6 +104,9 @@ func runStatus(w io.Writer, home, dir string, now time.Time) {
 	if d.DockerImage != nil {
 		fmt.Fprintf(w, "   %s\n", ui.Dim(fmt.Sprintf(i18n.T("analyze.docker"), ui.Bytes(d.DockerImage.AllocatedBytes), ui.Bytes(d.DockerImage.MaxBytes))))
 	}
+	if n := len(d.Snapshots); n > 0 {
+		fmt.Fprintf(w, "   %s\n", ui.Dim(snapshotNote(d.Snapshots)))
+	}
 	if t := d.Trend; t != nil {
 		delta, sign := t.DeltaBytes, "+"
 		if delta < 0 {
@@ -120,6 +126,39 @@ func runStatus(w io.Writer, home, dir string, now time.Time) {
 		fmt.Fprintf(w, "   %s  %9s  %s\n", c.Day, ui.Bytes(c.Bytes), ui.Dim(fmt.Sprintf(i18n.T("status.items"), c.Items)))
 	}
 	fmt.Fprintf(w, "\n %s\n\n", ui.Dim(i18n.T("status.more")))
+}
+
+// localSnapshots lists APFS local snapshots of the startup volume.
+func localSnapshots(run optimize.Runner) []string {
+	out, err := run("tmutil", "listlocalsnapshots", "/")
+	if err != nil {
+		return []string{}
+	}
+	names := []string{}
+	for _, l := range strings.Split(out, "\n") {
+		if l = strings.TrimSpace(l); strings.HasPrefix(l, "com.apple.") {
+			names = append(names, l)
+		}
+	}
+	return names
+}
+
+// snapshotNote: how many snapshots hold space, and what can be done about
+// the Time Machine ones (OS update snapshots go away on their own).
+func snapshotNote(names []string) string {
+	tm, osUpd := 0, 0
+	for _, n := range names {
+		if strings.HasPrefix(n, "com.apple.TimeMachine.") {
+			tm++
+		} else {
+			osUpd++
+		}
+	}
+	s := fmt.Sprintf(i18n.T("status.snapshots"), len(names), osUpd)
+	if tm > 0 {
+		s += " " + fmt.Sprintf(i18n.T("status.snapshots.tm"), tm)
+	}
+	return s
 }
 
 func historyCmd() *cobra.Command {

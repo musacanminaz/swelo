@@ -434,6 +434,18 @@
     tr: Unity proje cache'leri (sonraki açılışta asset'ler yeniden içe aktarılır, uzun sürebilir)
   rebuild: open the project in Unity
 
+- id: trash
+  group: cache
+  risk: risky
+  kind: path
+  paths: [~/.Trash]
+  children: true
+  older_than_days: 30
+  age_by: ctime
+  desc:
+    en: Items that have sat in the Trash for over 30 days (deleted for good — the Trash is the safety net)
+    tr: 30 günden uzun süredir Çöp'te duran öğeler (kalıcı silinir — Çöp güvenlik ağıdır)
+
 # ---------- report only ----------
 - id: big-user-data
   group: report

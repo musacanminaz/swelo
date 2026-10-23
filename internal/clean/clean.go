@@ -312,6 +312,9 @@ func children(dir string, r rules.Rule) []Item {
 	var items []Item
 	for _, en := range entries {
 		n := en.Name()
+		if n == ".DS_Store" {
+			continue // Finder's own, tiny, and rewritten anyway
+		}
 		if r.NameGlob != "" {
 			if ok, _ := filepath.Match(r.NameGlob, n); !ok {
 				continue
@@ -320,7 +323,17 @@ func children(dir string, r rules.Rule) []Item {
 		p := filepath.Join(dir, n)
 		it := Item{Path: p}
 		if r.OlderThanDays > 0 {
-			if info, err := en.Info(); err != nil || info.ModTime().After(cutoff) {
+			info, err := en.Info()
+			if err != nil {
+				continue
+			}
+			age := info.ModTime()
+			if r.AgeBy == "ctime" { // e.g. the Trash: when it was moved there, not when it was last edited
+				if st, ok := info.Sys().(*syscall.Stat_t); ok {
+					age = time.Unix(st.Ctimespec.Sec, st.Ctimespec.Nsec)
+				}
+			}
+			if age.After(cutoff) {
 				continue
 			}
 		}

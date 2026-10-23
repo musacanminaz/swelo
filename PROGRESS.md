@@ -96,7 +96,7 @@ Add:
 - [x] `swelo startup` + menu: ~/Library and /Library LaunchAgents and LaunchDaemons (non-Apple) with app, running pid, KeepAlive; flags: app gone, empty plist left by an uninstaller, updater, already disabled. `--pick`/menu: tick → `launchctl bootout` + `disable` for this user (undo line shown and logged), daemons as separate sudo steps. Here: 51 jobs, 13 orphans, 20 updaters
 - [x] leftovers of removed apps as an uninstall provider (`--only leftover`, menu kind "Leftovers…"): ~/Library entries named by a bundle id no installed app carries, that Spotlight cannot find and nothing touched for 30 days; one package per id, removal = `/usr/bin/trash` of all its folders. Here: Teams 1.2 GB, Spark 736 MB, Adobe, OneDrive, UTM…
 ## Phase 12 — more cleaning (v0.9.0)
-- [ ] Trash (--risky, > 30 days) and APFS local snapshots (report; delete = sudo step)
+- [x] `trash` rule (🟡): items that have sat in the Trash for 30+ days, aged by ctime (when they were moved there — verified on APFS), .DS_Store ignored. `status` reports APFS local snapshots: OS-update ones are left to macOS, Time Machine ones get the `tmutil deletelocalsnapshots` hint (no sudo task: the only snapshots here are OS-update ones, not deletable)
 - [ ] simulator devices unused 90 days (--risky), erase option
 - [ ] old Xcode DeviceSupport and Archives > 90 days (--risky)
 - [ ] analyze: files > 1 GB not opened in 180 days (report)

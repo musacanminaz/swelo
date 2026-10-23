@@ -256,3 +256,18 @@ func TestSizeCache(t *testing.T) {
 		t.Fatalf("cache off but used: %d", got)
 	}
 }
+
+// age_by: ctime reads when an entry was moved into the folder (the Trash),
+// not when its contents were last edited.
+func TestChildrenAgeByCtime(t *testing.T) {
+	dir := t.TempDir()
+	old := time.Now().AddDate(0, 0, -60)
+	os.WriteFile(filepath.Join(dir, "edited-long-ago"), []byte("x"), 0o644)
+	os.Chtimes(filepath.Join(dir, "edited-long-ago"), old, old) // mtime old, ctime now
+	os.WriteFile(filepath.Join(dir, ".DS_Store"), nil, 0o644)
+	byMtime := children(dir, rules.Rule{Children: true, OlderThanDays: 30})
+	byCtime := children(dir, rules.Rule{Children: true, OlderThanDays: 30, AgeBy: "ctime"})
+	if len(byMtime) != 1 || len(byCtime) != 0 {
+		t.Fatalf("mtime %v ctime %v", byMtime, byCtime)
+	}
+}
