@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 
+	"github.com/musacanminaz/swelo/internal/clean"
 	"github.com/musacanminaz/swelo/internal/i18n"
 	"github.com/musacanminaz/swelo/internal/perm"
 	"github.com/musacanminaz/swelo/internal/rules"
@@ -27,6 +28,8 @@ var menuIDs = []string{"quick", "clean", "analyze", "tree", "uninstall", "optimi
 // the menu comes back.
 func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 	introGate(in, w, true)
+	clean.CacheSizes(true) // Analyze then Clean measures each folder once
+	defer clean.CacheSizes(false)
 	// a sudo session granted from the menu never outlives swelo
 	defer endSudo()
 	sig := make(chan os.Signal, 1)
@@ -57,8 +60,10 @@ func runMenu(in *bufio.Reader, w io.Writer, home string) error {
 		case "analyze":
 			err = runAnalyze(in, w, home, false, 10, true, nil)
 		case "tree":
+			defer clean.ForgetSizes() // the tree can move things to the Trash
 			err = runTree(in, w, home, home, false)
 		case "uninstall":
+			defer clean.ForgetSizes()
 			err = runUninstall(in, w, home, uninstallOpts{pick: true})
 		case "optimize":
 			err = runOptimize(in, w, home, false, false, true, nil)

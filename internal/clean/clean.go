@@ -454,7 +454,7 @@ func measure(items []*Item, done func(*Item)) {
 		go func() {
 			defer wg.Done()
 			for it := range ch {
-				it.Size = DirSize(it.Path)
+				it.Size = cachedDirSize(it.Path)
 				done(it)
 			}
 		}()
@@ -464,6 +464,46 @@ func measure(items []*Item, done func(*Item)) {
 	}
 	close(ch)
 	wg.Wait()
+}
+
+// sizeCache keeps measured sizes for the length of a menu session, so
+// Analyze followed by Clean does not measure the same folders twice. Off by
+// default: a one-off command always measures.
+var sizeCache struct {
+	sync.Mutex
+	on bool
+	m  map[string]int64
+}
+
+// CacheSizes turns the session size cache on or off (and empties it).
+func CacheSizes(on bool) {
+	sizeCache.Lock()
+	sizeCache.on, sizeCache.m = on, map[string]int64{}
+	sizeCache.Unlock()
+}
+
+// ForgetSizes empties the cache; called after anything was deleted.
+func ForgetSizes() {
+	sizeCache.Lock()
+	sizeCache.m = map[string]int64{}
+	sizeCache.Unlock()
+}
+
+func cachedDirSize(p string) int64 {
+	sizeCache.Lock()
+	n, ok := sizeCache.m[p]
+	on := sizeCache.on
+	sizeCache.Unlock()
+	if on && ok {
+		return n
+	}
+	n = DirSize(p)
+	if on {
+		sizeCache.Lock()
+		sizeCache.m[p] = n
+		sizeCache.Unlock()
+	}
+	return n
 }
 
 // DirSize returns allocated bytes under p, counting hard links once (like du).
@@ -524,6 +564,7 @@ func Selected(r Result, risky bool) bool {
 // Apply deletes the items of every selected result through the safety gate
 // and runs command rules. report is called after each item or command.
 func (e *Engine) Apply(results []Result, risky bool, report func(r Result, path string, size int64, err error)) (freed int64) {
+	defer ForgetSizes() // whatever was measured is stale after deleting
 	for _, res := range results {
 		if !Selected(res, risky) {
 			continue

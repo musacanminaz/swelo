@@ -1,6 +1,7 @@
 package clean
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -231,5 +232,27 @@ func TestLanguageMarkers(t *testing.T) {
 		if got := paths(find(res, id).Items); len(got) != 1 || got[want] != "" {
 			t.Errorf("%s items = %v, want %s", id, got, want)
 		}
+	}
+}
+
+func TestSizeCache(t *testing.T) {
+	dir := t.TempDir()
+	f := filepath.Join(dir, "f")
+	os.WriteFile(f, bytes.Repeat([]byte("x"), 8192), 0o644)
+	CacheSizes(true)
+	defer CacheSizes(false)
+	first := cachedDirSize(dir)
+	os.WriteFile(f, bytes.Repeat([]byte("x"), 65536), 0o644)
+	if got := cachedDirSize(dir); got != first {
+		t.Fatalf("cache not used: %d then %d", first, got)
+	}
+	ForgetSizes()
+	if got := cachedDirSize(dir); got <= first {
+		t.Fatalf("after ForgetSizes: %d, want more than %d", got, first)
+	}
+	CacheSizes(false)
+	os.WriteFile(f, nil, 0o644)
+	if got := cachedDirSize(dir); got != DirSize(dir) {
+		t.Fatalf("cache off but used: %d", got)
 	}
 }

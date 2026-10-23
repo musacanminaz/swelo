@@ -84,6 +84,6 @@ Add:
 - [x] `swelo config` (show; set lang/recent_days/top; add|remove roots/exclude/protected/disable; edit) editing the YAML in place, comments kept; `lang:` in config; the menu language switch is saved
 - [x] shell completions: the tap formula installs zsh/bash/fish completions (generate_completions_from_executable); rule ids/groups, uninstall providers, config keys and --lang values complete
 - [x] help fully localized: flag descriptions, usage headings, help/version flags follow --lang / config (language is read before the command tree is built)
-## Phase 10 — speed (v0.6.1)
+## Phase 10 — speed (v0.6.1) — released 2026-10-23
 - [x] optimize scans artifacts only when Time Machine is set up (here: 45 s → 10 s); the plan box says so
-- [ ] sizes measured once per menu session (analyze → clean), reset after deletions
+- [x] sizes measured once per menu session (Analyze then Clean: 142 items measured in 0.0 s instead of ~25 s); the cache is emptied after clean apply, uninstall and the tree browser, and is off outside the menu
