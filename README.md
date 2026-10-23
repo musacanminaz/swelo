@@ -44,7 +44,10 @@ Output language follows your system (Turkish or English); override with `--lang 
 brew install musacanminaz/tap/swelo
 ```
 
-or from source: `go install github.com/musacanminaz/swelo/cmd/swelo@latest`.
+Homebrew also installs shell completions (zsh, bash, fish): rule names, providers and config keys complete with Tab.
+
+or from source: `go install github.com/musacanminaz/swelo/cmd/swelo@latest`
+(then `swelo completion zsh|bash|fish` prints the completion script).
 Prebuilt binaries are on the [releases page](https://github.com/musacanminaz/swelo/releases)
 (not notarized: run `xattr -d com.apple.quarantine swelo` after downloading).
 

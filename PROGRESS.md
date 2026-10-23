@@ -82,7 +82,7 @@ Add:
 - [x] `--json` for analyze (every category, big files, projects, skipped protected folders) and uninstall (list only; --pick/--remove refuse it)
 - [x] `swelo rules` (by group: risk, id, what it looks at, disabled-in-config; --json); `swelo clean node docker` = --only; unknown ids are an error
 - [x] `swelo config` (show; set lang/recent_days/top; add|remove roots/exclude/protected/disable; edit) editing the YAML in place, comments kept; `lang:` in config; the menu language switch is saved
-- [ ] shell completions installed by the brew formula
+- [x] shell completions: the tap formula installs zsh/bash/fish completions (generate_completions_from_executable); rule ids/groups, uninstall providers, config keys and --lang values complete
 - [ ] flag descriptions localized (--lang tr)
 ## Phase 10 — speed (v0.6.1)
 - [ ] optimize scans artifacts only when Time Machine is set up

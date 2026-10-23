@@ -34,6 +34,9 @@ func cleanCmd() *cobra.Command {
 		Use:   "clean [rule or group ...]",
 		Short: i18n.T("cmd.clean"),
 		Args:  cobra.ArbitraryArgs,
+		ValidArgsFunction: func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+			return ruleNames(), cobra.ShellCompDirectiveNoFileComp
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.only = append(o.only, args...)
 			if jsonFlag {
@@ -51,7 +54,29 @@ func cleanCmd() *cobra.Command {
 	f.BoolVar(&o.pick, "pick", false, "choose what to delete interactively")
 	f.StringSliceVar(&o.only, "only", nil, "only these rule ids or groups (same as naming them after clean; swelo rules lists them)")
 	f.IntVar(&o.recentDays, "recent-days", -1, "skip projects changed within N days (0 = off; default from config, 7)")
+	c.RegisterFlagCompletionFunc("only", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return ruleNames(), cobra.ShellCompDirectiveNoFileComp
+	})
 	return c
+}
+
+// ruleNames: every rule id and group, for shell completion.
+func ruleNames() []string {
+	rs, _, err := rules.Load(home())
+	if err != nil {
+		return nil
+	}
+	var names []string
+	seen := map[string]bool{}
+	for _, r := range rs {
+		for _, n := range []string{r.ID, r.Group} {
+			if !seen[n] {
+				seen[n] = true
+				names = append(names, n)
+			}
+		}
+	}
+	return names
 }
 
 func runClean(in *bufio.Reader, w io.Writer, home string, o cleanOpts, interactive bool) error {

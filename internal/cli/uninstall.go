@@ -46,6 +46,11 @@ func uninstallCmd() *cobra.Command {
 	f.StringSliceVar(&o.remove, "remove", nil, "uninstall these packages, by name as listed (or id)")
 	f.BoolVar(&o.yes, "yes", false, "do not ask for confirmation (never approves sudo)")
 	f.BoolVar(&o.noSudo, "no-sudo", false, "skip every step that needs sudo")
+	var providers []string
+	for _, p := range uninstall.Providers {
+		providers = append(providers, p.ID)
+	}
+	c.RegisterFlagCompletionFunc("only", cobra.FixedCompletions(providers, cobra.ShellCompDirectiveNoFileComp))
 	return c
 }
 

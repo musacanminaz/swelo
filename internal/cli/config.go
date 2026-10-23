@@ -24,19 +24,40 @@ func configCmd() *cobra.Command {
 			return showConfig(cmd.OutOrStdout(), home())
 		},
 	}
+	// completion: the key, then its values where they are a fixed set
+	scalar := func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+		switch {
+		case len(args) == 0:
+			return rules.ScalarKeys, cobra.ShellCompDirectiveNoFileComp
+		case len(args) == 1 && args[0] == "lang":
+			return []string{"tr", "en"}, cobra.ShellCompDirectiveNoFileComp
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	list := func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+		switch {
+		case len(args) == 0:
+			return rules.ListKeys, cobra.ShellCompDirectiveNoFileComp
+		case len(args) == 1 && args[0] == "disable":
+			return ruleNames(), cobra.ShellCompDirectiveNoFileComp
+		case len(args) == 1:
+			return nil, cobra.ShellCompDirectiveFilterDirs
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
 	c.AddCommand(
 		&cobra.Command{
-			Use: "set <key> <value>", Short: i18n.T("config.set"), Args: cobra.ExactArgs(2),
+			Use: "set <key> <value>", Short: i18n.T("config.set"), Args: cobra.ExactArgs(2), ValidArgsFunction: scalar,
 			RunE: func(cmd *cobra.Command, a []string) error { return setConfig(cmd.OutOrStdout(), home(), a[0], a[1]) },
 		},
 		&cobra.Command{
-			Use: "add <list> <value>", Short: i18n.T("config.add"), Args: cobra.ExactArgs(2),
+			Use: "add <list> <value>", Short: i18n.T("config.add"), Args: cobra.ExactArgs(2), ValidArgsFunction: list,
 			RunE: func(cmd *cobra.Command, a []string) error {
 				return editList(cmd.OutOrStdout(), home(), a[0], a[1], true)
 			},
 		},
 		&cobra.Command{
-			Use: "remove <list> <value>", Short: i18n.T("config.remove"), Args: cobra.ExactArgs(2),
+			Use: "remove <list> <value>", Short: i18n.T("config.remove"), Args: cobra.ExactArgs(2), ValidArgsFunction: list,
 			RunE: func(cmd *cobra.Command, a []string) error {
 				return editList(cmd.OutOrStdout(), home(), a[0], a[1], false)
 			},

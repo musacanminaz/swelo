@@ -21,7 +21,9 @@ var Version = "dev"
 var langFlag string
 
 // Execute runs the root command.
-func Execute() error {
+func Execute() error { return newRoot().Execute() }
+
+func newRoot() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "swelo",
 		Short:         i18n.T("tagline"),
@@ -48,8 +50,9 @@ func Execute() error {
 	root.PersistentFlags().BoolVar(&jsonFlag, "json", false, "machine-readable output: one JSON document, no prompts (clean --apply needs --yes)")
 	root.CompletionOptions.HiddenDefaultCmd = true
 	root.SetHelpCommand(&cobra.Command{Hidden: true})
+	root.RegisterFlagCompletionFunc("lang", cobra.FixedCompletions([]string{"tr", "en"}, cobra.ShellCompDirectiveNoFileComp))
 	root.AddCommand(permissionsCmd(), rulesCmd(), configCmd(), cleanCmd(), analyzeCmd(), uninstallCmd(), optimizeCmd(), statusCmd(), historyCmd())
-	return root.Execute()
+	return root
 }
 
 func home() string {
